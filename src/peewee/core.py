@@ -35,7 +35,6 @@ from collections import OrderedDict, deque, namedtuple
 from copy import deepcopy
 from functools import wraps
 from inspect import isclass
-from logging import NullHandler
 
 from peewee._compat import (PY3, _METACLASS_, basestring, binary_construct,
                             callable, long, reduce, string_type, unicode_type,
@@ -94,8 +93,7 @@ __all__ = [
 ]
 
 # All peewee-generated logs are logged to this namespace.
-logger = logging.getLogger('peewee')
-logger.addHandler(NullHandler())
+logger = logging.getLogger(__name__)
 
 
 def format_date_time(value, formats, post_process=None):

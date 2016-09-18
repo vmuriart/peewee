@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+import logging
 from peewee.core import (BareField, BigIntegerField, BlobField, BooleanField,
                          CharField, Check, Clause, CompositeKey, DQ, DataError,
                          DatabaseError, DateField, DateTimeField, DecimalField,
@@ -71,3 +72,5 @@ __all__ = (
     'UUIDField',
     'Window',
 )
+
+logging.getLogger(__name__).addHandler(logging.NullHandler())
