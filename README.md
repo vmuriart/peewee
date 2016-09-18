@@ -114,6 +114,11 @@ Queries are expressive and composable:
 
 Check out the `example app <http://docs.peewee-orm.com/en/latest/peewee/example.html>`_ for a working Twitter-clone website written with Flask.
 
+## Run peewee tests
+
+    $ python runtests.py (-e sqlite, -e postgres, -e mysql)
+
+
 ## Learning more
 
 Check the `documentation <http://docs.peewee-orm.com/>`_ for more examples.
