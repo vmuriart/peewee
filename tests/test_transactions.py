@@ -20,7 +20,7 @@ class TestTransaction(ModelTestCase):
         test_db.set_autocommit(True)
 
     def test_transaction_connection_handling(self):
-        patch = 'peewee.Database'
+        patch = 'peewee.core.Database'
         db = SqliteDatabase(':memory:')
         with mock.patch(patch, wraps=db) as patched_db:
             with transaction(patched_db):
@@ -53,7 +53,7 @@ class TestTransaction(ModelTestCase):
             execute_sql=mock.DEFAULT,
             rollback=mock.DEFAULT)
 
-        with mock.patch('peewee.Database', wraps=db) as patched_db:
+        with mock.patch('peewee.core.Database', wraps=db) as patched_db:
             with db_patches as db_mocks:
                 begin = db_mocks['begin']
                 commit = db_mocks['commit']
