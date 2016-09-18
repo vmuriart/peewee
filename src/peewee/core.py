@@ -32,15 +32,11 @@ import time
 import uuid
 import weakref
 from bisect import bisect_left, bisect_right
-from collections import deque, namedtuple
+from collections import OrderedDict, deque, namedtuple
 from copy import deepcopy
 from functools import wraps
 from inspect import isclass
-
-try:
-    from collections import OrderedDict
-except ImportError:
-    OrderedDict = dict
+from logging import NullHandler
 
 __all__ = [
     'BareField',
@@ -95,15 +91,6 @@ __all__ = [
     'UUIDField',
     'Window',
 ]
-
-# Set default logging handler to avoid "No handlers could be found for logger
-# "peewee"" warnings.
-try:  # Python 2.7+
-    from logging import NullHandler
-except ImportError:
-    class NullHandler(logging.Handler):
-        def emit(self, record):
-            pass
 
 # All peewee-generated logs are logged to this namespace.
 logger = logging.getLogger('peewee')
