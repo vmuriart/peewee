@@ -46,6 +46,11 @@ from peewee.exceptions import (DataError, DatabaseError, DoesNotExist,
                                NotSupportedError, OperationalError,
                                ProgrammingError)
 
+try:
+    from pysqlite2 import dbapi2 as sqlite3
+except ImportError:
+    import sqlite3
+
 __all__ = [
     'BareField',
     'BigIntegerField',
@@ -95,105 +100,75 @@ logger = logging.getLogger('peewee')
 logger.addHandler(NullHandler())
 
 # By default, peewee supports Sqlite, MySQL and Postgresql.
-try:
-    from pysqlite2 import dbapi2 as pysq3
-except ImportError:
-    pysq3 = None
-try:
-    import sqlite3
-except ImportError:
-    sqlite3 = pysq3
-else:
-    if pysq3 and pysq3.sqlite_version_info >= sqlite3.sqlite_version_info:
-        sqlite3 = pysq3
-
-try:
-    from psycopg2cffi import compat
-
-    compat.register()
-except ImportError:
-    pass
-try:
-    import psycopg2
-    from psycopg2 import extensions as pg_extensions
-except ImportError:
-    psycopg2 = None
-try:
-    import MySQLdb as mysql  # prefer the C module.
-except ImportError:
-    try:
-        import pymysql as mysql
-    except ImportError:
-        mysql = None
-
-try:
-    from playhouse._speedups import format_date_time
-    from playhouse._speedups import sort_models_topologically
-    from playhouse._speedups import strip_parens
-except ImportError:
-    def format_date_time(value, formats, post_process=None):
-        post_process = post_process or (lambda x: x)
-        for fmt in formats:
-            try:
-                return post_process(datetime.datetime.strptime(value, fmt))
-            except ValueError:
-                pass
-        return value
+psycopg2 = None
+pg_extensions = None
+mysql = None
 
 
-    def sort_models_topologically(models):
-        """Sort models topologically so that parents will precede children."""
-        models = set(models)
-        seen = set()
-        ordering = []
-
-        def dfs(model):
-            if model in models and model not in seen:
-                seen.add(model)
-                for foreign_key in model._meta.reverse_rel.values():
-                    dfs(foreign_key.model_class)
-                ordering.append(model)  # parent will follow descendants
-
-        # Order models by name and table initially to guarantee total ordering.
-        names = lambda m: (m._meta.name, m._meta.db_table)
-        for m in sorted(models, key=names, reverse=True):
-            dfs(m)
-        return list(reversed(ordering))
+def format_date_time(value, formats, post_process=None):
+    post_process = post_process or (lambda x: x)
+    for fmt in formats:
+        try:
+            return post_process(datetime.datetime.strptime(value, fmt))
+        except ValueError:
+            pass
+    return value
 
 
-    def strip_parens(s):
-        # Quick sanity check.
-        if not s or s[0] != '(':
-            return s
+def sort_models_topologically(models):
+    """Sort models topologically so that parents will precede children."""
+    models = set(models)
+    seen = set()
+    ordering = []
 
-        ct = i = 0
-        l = len(s)
-        while i < l:
-            if s[i] == '(' and s[l - 1] == ')':
-                ct += 1
-                i += 1
-                l -= 1
-            else:
-                break
-        if ct:
-            # If we ever end up with negatively-balanced parentheses, then we
-            # know that one of the outer parentheses was required.
-            unbalanced_ct = 0
-            required = 0
-            for i in range(ct, l - ct):
-                if s[i] == '(':
-                    unbalanced_ct += 1
-                elif s[i] == ')':
-                    unbalanced_ct -= 1
-                if unbalanced_ct < 0:
-                    required += 1
-                    unbalanced_ct = 0
-                if required == ct:
-                    break
-            ct -= required
-        if ct > 0:
-            return s[ct:-ct]
+    def dfs(model):
+        if model in models and model not in seen:
+            seen.add(model)
+            for foreign_key in model._meta.reverse_rel.values():
+                dfs(foreign_key.model_class)
+            ordering.append(model)  # parent will follow descendants
+
+    # Order models by name and table initially to guarantee total ordering.
+    names = lambda m: (m._meta.name, m._meta.db_table)
+    for m in sorted(models, key=names, reverse=True):
+        dfs(m)
+    return list(reversed(ordering))
+
+
+def strip_parens(s):
+    # Quick sanity check.
+    if not s or s[0] != '(':
         return s
+
+    ct = i = 0
+    l = len(s)
+    while i < l:
+        if s[i] == '(' and s[l - 1] == ')':
+            ct += 1
+            i += 1
+            l -= 1
+        else:
+            break
+    if ct:
+        # If we ever end up with negatively-balanced parentheses, then we
+        # know that one of the outer parentheses was required.
+        unbalanced_ct = 0
+        required = 0
+        for i in range(ct, l - ct):
+            if s[i] == '(':
+                unbalanced_ct += 1
+            elif s[i] == ')':
+                unbalanced_ct -= 1
+            if unbalanced_ct < 0:
+                required += 1
+                unbalanced_ct = 0
+            if required == ct:
+                break
+        ct -= required
+    if ct > 0:
+        return s[ct:-ct]
+    return s
+
 
 _DictQueryResultWrapper = _ModelQueryResultWrapper = None
 _SortedFieldList = _TuplesQueryResultWrapper = None
