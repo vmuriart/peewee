@@ -2083,8 +2083,8 @@ class TestReturningClause(ModelTestCase):
               .returning(User))
         users = [user for user in uq.execute()]
         assert len(users) == 2
-        assert all([user.username == 'huey' for user in users])
-        assert all([user.id is not None for user in users])
+        assert all( user.username == 'huey' for user in users)
+        assert all( user.id is not None for user in users)
 
         uq = uq.dicts().returning(User.username)
         user_data = [data for data in uq.execute()]
