@@ -3,7 +3,7 @@
 from peewee.core import (BareField, BigIntegerField, BlobField, BooleanField,
                          CharField, Check, Clause, CompositeKey, DQ, DataError,
                          DatabaseError, DateField, DateTimeField, DecimalField,
-                         DeferredRelation, DoesNotExist, DoubleField, Field,
+                         DeferredRelation, DoubleField, Field,
                          FixedCharField, FloatField, ForeignKeyField,
                          ImproperlyConfigured, IntegerField, IntegrityError,
                          InterfaceError, InternalError, JOIN, JOIN_FULL,
@@ -13,6 +13,11 @@ from peewee.core import (BareField, BigIntegerField, BlobField, BooleanField,
                          Proxy, R, SQL, SmallIntegerField, SqliteDatabase,
                          TextField, TimeField, TimestampField, UUIDField,
                          Using, Window, fn, prefetch)
+from peewee.exceptions import (DoesNotExist, ImproperlyConfigured,
+                               DatabaseError, DataError, IntegrityError,
+                               InterfaceError, InternalError,
+                               NotSupportedError, OperationalError,
+                               ProgrammingError)
 
 __version__ = '2.8.3'
 __all__ = (

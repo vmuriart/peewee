@@ -38,6 +38,16 @@ from functools import wraps
 from inspect import isclass
 from logging import NullHandler
 
+from peewee._compat import (callable, unicode_type, string_type, basestring,
+                            print_, binary_construct, long, reraise,
+                            _METACLASS_, with_metaclass, PY2, PY3, PY26,
+                            total_seconds)
+from peewee.exceptions import (DataError, DatabaseError, DoesNotExist,
+                               ImproperlyConfigured, IntegrityError,
+                               InterfaceError, InternalError,
+                               NotSupportedError, OperationalError,
+                               ProgrammingError, ExceptionWrapper)
+
 __all__ = [
     'BareField',
     'BigIntegerField',
@@ -47,13 +57,10 @@ __all__ = [
     'Check',
     'Clause',
     'CompositeKey',
-    'DatabaseError',
-    'DataError',
     'DateField',
     'DateTimeField',
     'DecimalField',
     'DeferredRelation',
-    'DoesNotExist',
     'DoubleField',
     'DQ',
     'Field',
@@ -61,24 +68,17 @@ __all__ = [
     'FloatField',
     'fn',
     'ForeignKeyField',
-    'ImproperlyConfigured',
     'IntegerField',
-    'IntegrityError',
-    'InterfaceError',
-    'InternalError',
     'JOIN',
     'JOIN_FULL',
     'JOIN_INNER',
     'JOIN_LEFT_OUTER',
     'Model',
     'MySQLDatabase',
-    'NotSupportedError',
-    'OperationalError',
     'Param',
     'PostgresqlDatabase',
     'prefetch',
     'PrimaryKeyField',
-    'ProgrammingError',
     'Proxy',
     'R',
     'SmallIntegerField',
@@ -95,58 +95,6 @@ __all__ = [
 # All peewee-generated logs are logged to this namespace.
 logger = logging.getLogger('peewee')
 logger.addHandler(NullHandler())
-
-# Python 2/3 compatibility helpers. These helpers are used internally and are
-# not exported.
-_METACLASS_ = '_metaclass_helper_'
-
-
-def with_metaclass(meta, base=object):
-    return meta(_METACLASS_, (base,), {})
-
-
-PY2 = sys.version_info[0] == 2
-PY3 = sys.version_info[0] == 3
-PY26 = sys.version_info[:2] == (2, 6)
-if PY3:
-    import builtins
-    from collections import Callable
-    from functools import reduce
-
-    callable = lambda c: isinstance(c, Callable)
-    unicode_type = str
-    string_type = bytes
-    basestring = str
-    print_ = getattr(builtins, 'print')
-    binary_construct = lambda s: bytes(s.encode('raw_unicode_escape'))
-    long = int
-
-
-    def reraise(tp, value, tb=None):
-        if value.__traceback__ is not tb:
-            raise value.with_traceback(tb)
-        raise value
-elif PY2:
-    unicode_type = unicode
-    string_type = basestring
-    binary_construct = buffer
-
-
-    def print_(s):
-        sys.stdout.write(s)
-        sys.stdout.write('\n')
-
-
-    exec('def reraise(tp, value, tb=None): raise tp, value, tb')
-else:
-    raise RuntimeError('Unsupported python version.')
-
-if PY26:
-    _M = 10 ** 6
-    total_seconds = lambda t: (t.microseconds + 0.0 + (
-        t.seconds + t.days * 24 * 3600) * _M) / _M
-else:
-    total_seconds = lambda t: t.total_seconds()
 
 # By default, peewee supports Sqlite, MySQL and Postgresql.
 try:
@@ -3593,67 +3541,6 @@ ForeignKeyMetadata = namedtuple(
     ('column', 'dest_table', 'dest_column', 'table'))
 
 
-class PeeweeException(Exception):
-    pass
-
-
-class ImproperlyConfigured(PeeweeException):
-    pass
-
-
-class DatabaseError(PeeweeException):
-    pass
-
-
-class DataError(DatabaseError):
-    pass
-
-
-class IntegrityError(DatabaseError):
-    pass
-
-
-class InterfaceError(PeeweeException):
-    pass
-
-
-class InternalError(DatabaseError):
-    pass
-
-
-class NotSupportedError(DatabaseError):
-    pass
-
-
-class OperationalError(DatabaseError):
-    pass
-
-
-class ProgrammingError(DatabaseError):
-    pass
-
-
-class ExceptionWrapper(object):
-    __slots__ = ['exceptions']
-
-    def __init__(self, exceptions):
-        self.exceptions = exceptions
-
-    def __enter__(self):
-        pass
-
-    def __exit__(self, exc_type, exc_value, traceback):
-        if exc_type is None:
-            return
-        if exc_type.__name__ in self.exceptions:
-            new_type = self.exceptions[exc_type.__name__]
-            if PY26:
-                exc_args = exc_value
-            else:
-                exc_args = exc_value.args
-            reraise(new_type, new_type(*exc_args), traceback)
-
-
 class _BaseConnectionLocal(object):
     def __init__(self, **kwargs):
         super(_BaseConnectionLocal, self).__init__(**kwargs)
@@ -4610,11 +4497,6 @@ if _SortedFieldList is None:
             idx = self.index(item)
             del self._items[idx]
             del self._keys[idx]
-
-
-class DoesNotExist(Exception):
-    pass
-
 
 if sqlite3:
     default_database = SqliteDatabase('peewee.db')
