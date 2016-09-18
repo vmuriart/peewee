@@ -2,6 +2,7 @@
 
 import sys
 import threading
+
 try:
     from Queue import Queue
 except ImportError:
@@ -19,6 +20,7 @@ from tests.base import skip_unless
 from tests.base import test_db
 from tests.base import ulit
 from tests.models import *
+import pytest
 
 
 class TestMultiThreadedQueries(ModelTestCase):
@@ -53,12 +55,13 @@ class TestMultiThreadedQueries(ModelTestCase):
         threads = []
 
         for i in range(self.threads):
-            threads.append(threading.Thread(target=create_user_thread, args=(i*10, i * 10 + 10)))
+            threads.append(threading.Thread(target=create_user_thread,
+                                            args=(i * 10, i * 10 + 10)))
 
         [t.start() for t in threads]
         [t.join() for t in threads]
 
-        self.assertEqual(User.select().count(), self.threads * 10)
+        assert User.select().count() == self.threads * 10
 
     def test_multiple_readers(self):
         data_queue = Queue()
@@ -70,38 +73,41 @@ class TestMultiThreadedQueries(ModelTestCase):
         threads = []
 
         for i in range(self.threads):
-            threads.append(threading.Thread(target=reader_thread, args=(data_queue, 20)))
+            threads.append(
+                threading.Thread(target=reader_thread, args=(data_queue, 20)))
 
         [t.start() for t in threads]
         [t.join() for t in threads]
 
-        self.assertEqual(data_queue.qsize(), self.threads * 20)
+        assert data_queue.qsize() == self.threads * 20
 
 
 class TestDeferredDatabase(PeeweeTestCase):
     def test_deferred_database(self):
         deferred_db = SqliteDatabase(None)
-        self.assertTrue(deferred_db.deferred)
+        assert deferred_db.deferred
 
         class DeferredModel(Model):
             class Meta:
                 database = deferred_db
 
-        self.assertRaises(Exception, deferred_db.connect)
+        with pytest.raises(Exception):
+            deferred_db.connect()
         sq = DeferredModel.select()
-        self.assertRaises(Exception, sq.execute)
+        with pytest.raises(Exception):
+            sq.execute()
 
         deferred_db.init(':memory:')
-        self.assertFalse(deferred_db.deferred)
+        assert not deferred_db.deferred
 
         # connecting works
         conn = deferred_db.connect()
         DeferredModel.create_table()
         sq = DeferredModel.select()
-        self.assertEqual(list(sq), [])
+        assert list(sq) == []
 
         deferred_db.init(None)
-        self.assertTrue(deferred_db.deferred)
+        assert deferred_db.deferred
 
 
 class TestSQLAll(PeeweeTestCase):
@@ -120,14 +126,14 @@ class TestSQLAll(PeeweeTestCase):
 
     def test_sqlall(self):
         sql = UniqueModel.sqlall()
-        self.assertEqual(sql, [
+        assert sql == [
             ('CREATE TABLE "uniquemodel" ("id" INTEGER NOT NULL PRIMARY KEY, '
              '"name" VARCHAR(255) NOT NULL)'),
             'CREATE UNIQUE INDEX "uniquemodel_name" ON "uniquemodel" ("name")',
-        ])
+        ]
 
         sql = MultiIndexModel.sqlall()
-        self.assertEqual(sql, [
+        assert sql == [
             ('CREATE TABLE "multiindexmodel" ("id" INTEGER NOT NULL PRIMARY '
              'KEY, "f1" VARCHAR(255) NOT NULL, "f2" VARCHAR(255) NOT NULL, '
              '"f3" VARCHAR(255) NOT NULL)'),
@@ -135,13 +141,13 @@ class TestSQLAll(PeeweeTestCase):
              ' ("f1", "f2")'),
             ('CREATE INDEX "multiindexmodel_f2_f3" ON "multiindexmodel" '
              '("f2", "f3")'),
-        ])
+        ]
 
         sql = SeqModelA.sqlall()
-        self.assertEqual(sql, [
+        assert sql == [
             ('CREATE TABLE "seqmodela" ("id" INTEGER NOT NULL PRIMARY KEY '
              'DEFAULT NEXTVAL(\'just_testing_seq\'), "num" INTEGER NOT NULL)'),
-        ])
+        ]
 
 
 class TestLongIndexName(PeeweeTestCase):
@@ -152,16 +158,16 @@ class TestLongIndexName(PeeweeTestCase):
             c123456789012345678901234567890 = CharField()
 
         fields = LongIndexModel._meta.sorted_fields[1:]
-        self.assertEqual(len(fields), 3)
+        assert len(fields) == 3
 
         sql, params = compiler.create_index(LongIndexModel, fields, False)
-        self.assertEqual(sql, (
+        assert sql == (
             'CREATE INDEX "longindexmodel_85c2f7db" '
             'ON "longindexmodel" ('
             '"a123456789012345678901234567890", '
             '"b123456789012345678901234567890", '
             '"c123456789012345678901234567890")'
-        ))
+        )
 
 
 class TestDroppingIndex(ModelTestCase):
@@ -184,33 +190,37 @@ class TestDroppingIndex(ModelTestCase):
         IndexedModel.create_table()
         indexes = db.get_indexes(IndexedModel._meta.db_table)
 
-        self.assertEqual(sorted(idx.name for idx in indexes), [
+        assert sorted(idx.name for idx in indexes) == [
             'indexedmodel_f1_f2',
             'indexedmodel_idx',
             'indexedmodel_idx_uniq',
-            'indexedmodel_uniq'])
+            'indexedmodel_uniq']
 
         with self.log_queries() as query_log:
             IndexedModel._drop_indexes()
 
-        self.assertEqual(sorted(query_log.queries), sorted([
-            ('DROP INDEX "%s"' % idx.name, []) for idx in indexes]))
-        self.assertEqual(db.get_indexes(IndexedModel._meta.db_table), [])
+        assert sorted(query_log.queries) == sorted([
+                                                       (
+                                                           'DROP INDEX "%s"' % idx.name,
+                                                           []) for idx in
+                                                       indexes])
+        assert db.get_indexes(IndexedModel._meta.db_table) == []
 
 
 class TestConnectionState(PeeweeTestCase):
     def test_connection_state(self):
         conn = test_db.get_conn()
-        self.assertFalse(test_db.is_closed())
+        assert not test_db.is_closed()
         test_db.close()
-        self.assertTrue(test_db.is_closed())
+        assert test_db.is_closed()
         conn = test_db.get_conn()
-        self.assertFalse(test_db.is_closed())
+        assert not test_db.is_closed()
 
     def test_sql_error(self):
         bad_sql = 'select asdf from -1;'
-        self.assertRaises(Exception, query_db.execute_sql, bad_sql)
-        self.assertEqual(query_db.last_error, (bad_sql, None))
+        with pytest.raises(Exception):
+            query_db.execute_sql(bad_sql)
+        assert query_db.last_error == (bad_sql, None)
 
 
 @skip_unless(lambda: test_db.drop_cascade)
@@ -222,7 +232,7 @@ class TestDropTableCascade(ModelTestCase):
         b1 = Blog.create(user=u1, title='b1')
 
         User.drop_table(cascade=True)
-        self.assertFalse(User.table_exists())
+        assert not User.table_exists()
 
         # The constraint is dropped, we can create a blog for a non-
         # existant user.
@@ -240,10 +250,10 @@ class TestDatabaseSequences(ModelTestCase):
         b2 = SeqModelB.create(other_num=102)
         a3 = SeqModelA.create(num=3)
 
-        self.assertEqual(a1.id, a2.id - 1)
-        self.assertEqual(a2.id, b1.id - 1)
-        self.assertEqual(b1.id, b2.id - 1)
-        self.assertEqual(b2.id, a3.id - 1)
+        assert a1.id == a2.id - 1
+        assert a2.id == b1.id - 1
+        assert b1.id == b2.id - 1
+        assert b2.id == a3.id - 1
 
 
 @skip_unless(lambda: issubclass(database_class, PostgresqlDatabase))
@@ -278,15 +288,15 @@ class TestUnicodeConversion(ModelTestCase):
 
         u = User.get(User.id == self.user.id)
         if sys.version_info[0] < 3:
-            self.assertFalse(u.username == self.user.username)
+            assert not (u.username == self.user.username)
         else:
-            self.assertTrue(u.username == self.user.username)
+            assert u.username == self.user.username
 
         test_db.register_unicode = True
         self.reset_encoding('LATIN1')
 
         u = User.get(User.id == self.user.id)
-        self.assertEqual(u.username, self.user.username)
+        assert u.username == self.user.username
 
 
 @skip_unless(lambda: issubclass(database_class, PostgresqlDatabase))
@@ -295,16 +305,16 @@ class TestPostgresqlSchema(ModelTestCase):
 
     def setUp(self):
         test_db.execute_sql('CREATE SCHEMA huey;')
-        super(TestPostgresqlSchema,self).setUp()
+        super(TestPostgresqlSchema, self).setUp()
 
     def tearDown(self):
-        super(TestPostgresqlSchema,self).tearDown()
+        super(TestPostgresqlSchema, self).tearDown()
         test_db.execute_sql('DROP SCHEMA huey;')
 
     def test_pg_schema(self):
         pgs = PGSchema.create(data='huey')
         pgs_db = PGSchema.get(PGSchema.data == 'huey')
-        self.assertEqual(pgs.id, pgs_db.id)
+        assert pgs.id == pgs_db.id
 
 
 @skip_unless(lambda: isinstance(test_db, SqliteDatabase))
@@ -317,7 +327,7 @@ class TestOuterLoopInnerCommit(ModelTestCase):
 
     def test_outer_loop_inner_commit(self):
         # By default we are in autocommit mode (isolation_level=None).
-        self.assertEqual(test_db.get_conn().isolation_level, None)
+        assert test_db.get_conn().isolation_level == None
 
         for username in ['u1', 'u2', 'u3']:
             User.create(username=username)
@@ -328,13 +338,13 @@ class TestOuterLoopInnerCommit(ModelTestCase):
         # These statements are auto-committed.
         new_db = self.new_connection()
         count = new_db.execute_sql('select count(*) from blog;').fetchone()
-        self.assertEqual(count[0], 3)
+        assert count[0] == 3
 
-        self.assertEqual(Blog.select().count(), 3)
+        assert Blog.select().count() == 3
         blog_titles = [b.title for b in Blog.select().order_by(Blog.title)]
-        self.assertEqual(blog_titles, ['b-u1', 'b-u2', 'b-u3'])
+        assert blog_titles == ['b-u1', 'b-u2', 'b-u3']
 
-        self.assertEqual(Blog.delete().execute(), 3)
+        assert Blog.delete().execute() == 3
 
         # If we disable autocommit, we need to explicitly call begin().
         test_db.set_autocommit(False)
@@ -346,15 +356,15 @@ class TestOuterLoopInnerCommit(ModelTestCase):
         # These statements have not been committed.
         new_db = self.new_connection()
         count = new_db.execute_sql('select count(*) from blog;').fetchone()
-        self.assertEqual(count[0], 0)
+        assert count[0] == 0
 
-        self.assertEqual(Blog.select().count(), 3)
+        assert Blog.select().count() == 3
         blog_titles = [b.title for b in Blog.select().order_by(Blog.title)]
-        self.assertEqual(blog_titles, ['b-u1', 'b-u2', 'b-u3'])
+        assert blog_titles == ['b-u1', 'b-u2', 'b-u3']
 
         test_db.commit()
         count = new_db.execute_sql('select count(*) from blog;').fetchone()
-        self.assertEqual(count[0], 3)
+        assert count[0] == 3
 
 
 class TestConnectionInitialization(PeeweeTestCase):
@@ -369,15 +379,15 @@ class TestConnectionInitialization(PeeweeTestCase):
                 self.execute_sql('pragma stats;').fetchone()
 
         db = TestDatabase(':memory:')
-        self.assertFalse(state['initialized'])
+        assert not state['initialized']
 
         conn = db.get_conn()
-        self.assertEqual(state['initialized'], 1)
+        assert state['initialized'] == 1
 
         # Since a conn is already open, this will return the existing conn.
         conn = db.get_conn()
-        self.assertEqual(state['initialized'], 1)
+        assert state['initialized'] == 1
 
         db.close()
         db.connect()
-        self.assertEqual(state['initialized'], 2)
+        assert state['initialized'] == 2

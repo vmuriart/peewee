@@ -24,6 +24,7 @@ from tests.base import skip_if
 from tests.base import skip_unless
 from tests.base import test_db
 from tests.models import *
+import pytest
 
 
 class TestFieldTypes(ModelTestCase):
@@ -74,7 +75,7 @@ class TestFieldTypes(ModelTestCase):
 
     def assertNM(self, q, exp):
         query = NullModel.select().where(q).order_by(NullModel.id)
-        self.assertEqual([nm.char_field for nm in query], exp)
+        assert [nm.char_field for nm in query] == exp
 
     def test_null_query(self):
         NullModel.delete().execute()
@@ -100,8 +101,8 @@ class TestFieldTypes(ModelTestCase):
     def test_charfield(self):
         NM = NullModel
         nm = NM.create(char_field=4)
-        nm_db = NM.get(NM.id==nm.id)
-        self.assertEqual(nm_db.char_field, '4')
+        nm_db = NM.get(NM.id == nm.id)
+        assert nm_db.char_field == '4'
 
         nm_alpha = NM.create(char_field='Alpha')
         nm_bravo = NM.create(char_field='Bravo')
@@ -116,29 +117,31 @@ class TestFieldTypes(ModelTestCase):
         ilike_str = '%A%'
 
         case_sens = NM.select(NM.char_field).where(NM.char_field % like_str)
-        self.assertEqual([x[0] for x in case_sens.tuples()], ['Alpha'])
+        assert [x[0] for x in case_sens.tuples()] == ['Alpha']
 
-        case_insens = NM.select(NM.char_field).where(NM.char_field ** ilike_str)
-        self.assertEqual([x[0] for x in case_insens.tuples()], ['Alpha', 'Bravo'])
+        case_insens = NM.select(NM.char_field).where(
+            NM.char_field ** ilike_str)
+        assert [x[0] for x in case_insens.tuples()] == \
+               ['Alpha', 'Bravo']
 
     def test_fixed_charfield(self):
         NM = NullModel
         nm = NM.create(fixed_char_field=4)
         nm_db = NM.get(NM.id == nm.id)
-        self.assertEqual(nm_db.fixed_char_field, '4')
+        assert nm_db.fixed_char_field == '4'
 
         fc_vals = [obj.fixed_char_field for obj in NM.select().order_by(NM.id)]
-        self.assertEqual(fc_vals, ['fc1', 'fc2', 'fc3', '4'])
+        assert fc_vals == ['fc1', 'fc2', 'fc3', '4']
 
     def test_intfield(self):
         nm = NullModel.create(int_field='4')
-        nm_db = NullModel.get(NullModel.id==nm.id)
-        self.assertEqual(nm_db.int_field, 4)
+        nm_db = NullModel.get(NullModel.id == nm.id)
+        assert nm_db.int_field == 4
 
     def test_floatfield(self):
         nm = NullModel.create(float_field='4.2')
-        nm_db = NullModel.get(NullModel.id==nm.id)
-        self.assertEqual(nm_db.float_field, 4.2)
+        nm_db = NullModel.get(NullModel.id == nm.id)
+        assert nm_db.float_field == 4.2
 
     def test_decimalfield(self):
         D = decimal.Decimal
@@ -147,20 +150,21 @@ class TestFieldTypes(ModelTestCase):
         nm.decimal_field2 = D("100.33")
         nm.save()
 
-        nm_from_db = NullModel.get(NullModel.id==nm.id)
+        nm_from_db = NullModel.get(NullModel.id == nm.id)
         # sqlite doesn't enforce these constraints properly
-        #self.assertEqual(nm_from_db.decimal_field1, decimal.Decimal("3.14159"))
-        self.assertEqual(nm_from_db.decimal_field2, D("100.33"))
+        # self.assertEqual(nm_from_db.decimal_field1, decimal.Decimal("3.14159"))
+        assert nm_from_db.decimal_field2 == D("100.33")
 
         class TestDecimalModel(TestModel):
             df1 = DecimalField(decimal_places=2, auto_round=True)
-            df2 = DecimalField(decimal_places=2, auto_round=True, rounding=decimal.ROUND_UP)
+            df2 = DecimalField(decimal_places=2, auto_round=True,
+                               rounding=decimal.ROUND_UP)
 
         f1 = TestDecimalModel.df1.db_value
         f2 = TestDecimalModel.df2.db_value
 
-        self.assertEqual(f1(D('1.2345')), D('1.23'))
-        self.assertEqual(f2(D('1.2345')), D('1.24'))
+        assert f1(D('1.2345')) == D('1.23')
+        assert f2(D('1.2345')) == D('1.24')
 
     def test_boolfield(self):
         NullModel.delete().execute()
@@ -189,22 +193,25 @@ class TestFieldTypes(ModelTestCase):
             dt2 = dt2.replace(microsecond=0)
             t1 = t1.replace(microsecond=0)
 
-        nm1 = NullModel.create(datetime_field=dt1, date_field=d1, time_field=t1)
+        nm1 = NullModel.create(datetime_field=dt1, date_field=d1,
+                               time_field=t1)
         nm2 = NullModel.create(datetime_field=dt2, time_field=t2)
 
-        nmf1 = NullModel.get(NullModel.id==nm1.id)
-        self.assertEqual(nmf1.date_field, d1)
-        self.assertEqual(nmf1.datetime_field, dt1)
-        self.assertEqual(nmf1.time_field, t1)
+        nmf1 = NullModel.get(NullModel.id == nm1.id)
+        assert nmf1.date_field == d1
+        assert nmf1.datetime_field == dt1
+        assert nmf1.time_field == t1
 
-        nmf2 = NullModel.get(NullModel.id==nm2.id)
-        self.assertEqual(nmf2.datetime_field, dt2)
-        self.assertEqual(nmf2.time_field, t2)
+        nmf2 = NullModel.get(NullModel.id == nm2.id)
+        assert nmf2.datetime_field == dt2
+        assert nmf2.time_field == t2
 
     def test_time_field_python_value(self):
         tf = NullModel.time_field
+
         def T(*a):
             return datetime.time(*a)
+
         tests = (
             ('01:23:45', T(1, 23, 45)),
             ('01:23', T(1, 23, 0)),
@@ -217,12 +224,12 @@ class TestFieldTypes(ModelTestCase):
             (datetime.timedelta(seconds=0), T(0, 0)),
         )
         for val, expected in tests:
-            self.assertEqual(tf.python_value(val), expected)
+            assert tf.python_value(val) == expected
 
     def test_date_as_string(self):
         nm1 = NullModel.create(date_field='2014-01-02')
         nm1_db = NullModel.get(NullModel.id == nm1.id)
-        self.assertEqual(nm1_db.date_field, datetime.date(2014, 1, 2))
+        assert nm1_db.date_field == datetime.date(2014, 1, 2)
 
     def test_various_formats(self):
         class FormatModel(Model):
@@ -235,46 +242,46 @@ class TestFieldTypes(ModelTestCase):
         tf = FormatModel._meta.fields['tf']
 
         d = datetime.datetime
-        self.assertEqual(dtf.python_value('2012-01-01 11:11:11.123456'), d(
+        assert dtf.python_value('2012-01-01 11:11:11.123456') == d(
             2012, 1, 1, 11, 11, 11, 123456
-        ))
-        self.assertEqual(dtf.python_value('2012-01-01 11:11:11'), d(
+        )
+        assert dtf.python_value('2012-01-01 11:11:11') == d(
             2012, 1, 1, 11, 11, 11
-        ))
-        self.assertEqual(dtf.python_value('2012-01-01'), d(
+        )
+        assert dtf.python_value('2012-01-01') == d(
             2012, 1, 1,
-        ))
-        self.assertEqual(dtf.python_value('2012 01 01'), '2012 01 01')
+        )
+        assert dtf.python_value('2012 01 01') == '2012 01 01'
 
         d = datetime.date
-        self.assertEqual(df.python_value('2012-01-01 11:11:11.123456'), d(
+        assert df.python_value('2012-01-01 11:11:11.123456') == d(
             2012, 1, 1,
-        ))
-        self.assertEqual(df.python_value('2012-01-01 11:11:11'), d(
+        )
+        assert df.python_value('2012-01-01 11:11:11') == d(
             2012, 1, 1,
-        ))
-        self.assertEqual(df.python_value('2012-01-01'), d(
+        )
+        assert df.python_value('2012-01-01') == d(
             2012, 1, 1,
-        ))
-        self.assertEqual(df.python_value('2012 01 01'), '2012 01 01')
+        )
+        assert df.python_value('2012 01 01') == '2012 01 01'
 
         t = datetime.time
-        self.assertEqual(tf.python_value('2012-01-01 11:11:11.123456'), t(
+        assert tf.python_value('2012-01-01 11:11:11.123456') == t(
             11, 11, 11, 123456
-        ))
-        self.assertEqual(tf.python_value('2012-01-01 11:11:11'), t(
+        )
+        assert tf.python_value('2012-01-01 11:11:11') == t(
             11, 11, 11
-        ))
-        self.assertEqual(tf.python_value('11:11:11.123456'), t(
+        )
+        assert tf.python_value('11:11:11.123456') == t(
             11, 11, 11, 123456
-        ))
-        self.assertEqual(tf.python_value('11:11:11'), t(
+        )
+        assert tf.python_value('11:11:11') == t(
             11, 11, 11
-        ))
-        self.assertEqual(tf.python_value('11:11'), t(
+        )
+        assert tf.python_value('11:11') == t(
             11, 11,
-        ))
-        self.assertEqual(tf.python_value('11:11 AM'), '11:11 AM')
+        )
+        assert tf.python_value('11:11 AM') == '11:11 AM'
 
         class CustomFormatsModel(Model):
             dtf = DateTimeField(formats=['%b %d, %Y %I:%M:%S %p'])
@@ -286,22 +293,23 @@ class TestFieldTypes(ModelTestCase):
         tf = CustomFormatsModel._meta.fields['tf']
 
         d = datetime.datetime
-        self.assertEqual(dtf.python_value('2012-01-01 11:11:11.123456'), '2012-01-01 11:11:11.123456')
-        self.assertEqual(dtf.python_value('Jan 1, 2012 11:11:11 PM'), d(
+        assert dtf.python_value('2012-01-01 11:11:11.123456') == \
+               '2012-01-01 11:11:11.123456'
+        assert dtf.python_value('Jan 1, 2012 11:11:11 PM') == d(
             2012, 1, 1, 23, 11, 11,
-        ))
+        )
 
         d = datetime.date
-        self.assertEqual(df.python_value('2012-01-01'), '2012-01-01')
-        self.assertEqual(df.python_value('Jan 1, 2012'), d(
+        assert df.python_value('2012-01-01') == '2012-01-01'
+        assert df.python_value('Jan 1, 2012') == d(
             2012, 1, 1,
-        ))
+        )
 
         t = datetime.time
-        self.assertEqual(tf.python_value('11:11:11'), '11:11:11')
-        self.assertEqual(tf.python_value('11:11 PM'), t(
+        assert tf.python_value('11:11:11') == '11:11:11'
+        assert tf.python_value('11:11 PM') == t(
             23, 11
-        ))
+        )
 
     @skip_test_if(lambda: isinstance(test_db, MySQLDatabase))
     def test_blob_and_binary_field(self):
@@ -311,27 +319,27 @@ class TestFieldTypes(ModelTestCase):
 
         # pull from db and check binary data
         res = BlobModel.get(BlobModel.id == blob.id)
-        self.assertTrue(isinstance(res.data, binary_types))
+        assert isinstance(res.data, binary_types)
 
-        self.assertEqual(len(res.data), byte_count)
+        assert len(res.data) == byte_count
         db_data = res.data
         binary_data = binary_construct(data)
 
         if db_data != binary_data and sys.version_info[:3] >= (3, 3, 3):
             db_data = db_data.tobytes()
 
-        self.assertEqual(db_data, binary_data)
+        assert db_data == binary_data
 
         # try querying the blob field
         binary_data = res.data
 
         # use the string representation
         res = BlobModel.get(BlobModel.data == data)
-        self.assertEqual(res.id, blob.id)
+        assert res.id == blob.id
 
         # use the binary representation
         res = BlobModel.get(BlobModel.data == binary_data)
-        self.assertEqual(res.id, blob.id)
+        assert res.id == blob.id
 
     def test_between(self):
         field = NullModel.int_field
@@ -350,7 +358,8 @@ class TestFieldTypes(ModelTestCase):
 
     def test_startswith(self):
         NullModel.create(char_field='ch1')
-        self.assertNM(NullModel.char_field.startswith('c'), ['c1', 'c2', 'c3', 'ch1'])
+        self.assertNM(NullModel.char_field.startswith('c'),
+                      ['c1', 'c2', 'c3', 'ch1'])
         self.assertNM(NullModel.char_field.startswith('ch'), ['ch1'])
         self.assertNM(NullModel.char_field.startswith('a'), [])
 
@@ -374,7 +383,7 @@ class TestFieldTypes(ModelTestCase):
             query = NullModel.select().where(
                 NullModel.char_field.regexp(regexp)).order_by(NullModel.id)
             values = [nm.char_field for nm in query]
-            self.assertEqual(values, list(expected))
+            assert values == list(expected)
 
         assertValues('^ab', 'abcdefg', 'abcd')
         assertValues('d', 'abcdefg', 'abcd', 'defg')
@@ -388,15 +397,15 @@ class TestFieldTypes(ModelTestCase):
 
         values = (NullModel
                   .select(
-                      NullModel.char_field.concat('-nuggets').alias('nugs'))
+            NullModel.char_field.concat('-nuggets').alias('nugs'))
                   .order_by(NullModel.id)
                   .dicts())
-        self.assertEqual(list(values), [
+        assert list(values) == [
             {'nugs': 'c1-nuggets'},
             {'nugs': 'c2-nuggets'},
             {'nugs': 'c3-nuggets'},
             {'nugs': 'foo-nuggets'},
-            {'nugs': 'bar-nuggets'}])
+            {'nugs': 'bar-nuggets'}]
 
     def test_field_aliasing(self):
         username = User.username
@@ -408,16 +417,16 @@ class TestFieldTypes(ModelTestCase):
             user_fk = user_fk.clone()
             blog_pk = blog_pk.clone()
 
-            self.assertEqual(username.name, 'username')
-            self.assertEqual(username.model_class, User)
+            assert username.name == 'username'
+            assert username.model_class == User
 
-            self.assertEqual(user_fk.name, 'user')
-            self.assertEqual(user_fk.model_class, Blog)
-            self.assertEqual(user_fk.rel_model, User)
+            assert user_fk.name == 'user'
+            assert user_fk.model_class == Blog
+            assert user_fk.rel_model == User
 
-            self.assertEqual(blog_pk.name, 'pk')
-            self.assertEqual(blog_pk.model_class, Blog)
-            self.assertTrue(blog_pk.primary_key)
+            assert blog_pk.name == 'pk'
+            assert blog_pk.model_class == Blog
+            assert blog_pk.primary_key
 
 
 class TestTimestampField(ModelTestCase):
@@ -432,17 +441,17 @@ class TestTimestampField(ModelTestCase):
         t2 = TimestampModel.create(local_us=d, utc_ms=d, local=d)
 
         t1_db = TimestampModel.get(TimestampModel.local_us == dt)
-        self.assertEqual(t1_db.id, t1.id)
-        self.assertEqual(t1_db.local_us, dt)
-        self.assertEqual(t1_db.utc_ms, dt.replace(microsecond=654000))
-        self.assertEqual(t1_db.local,
-                         dt.replace(microsecond=0).replace(second=14))
+        assert t1_db.id == t1.id
+        assert t1_db.local_us == dt
+        assert t1_db.utc_ms == dt.replace(microsecond=654000)
+        assert t1_db.local == \
+               dt.replace(microsecond=0).replace(second=14)
 
         t2_db = TimestampModel.get(TimestampModel.utc_ms == d)
-        self.assertEqual(t2_db.id, t2.id)
-        self.assertEqual(t2_db.local_us, d_dt)
-        self.assertEqual(t2_db.utc_ms, d_dt)
-        self.assertEqual(t2_db.local, d_dt)
+        assert t2_db.id == t2.id
+        assert t2_db.local_us == d_dt
+        assert t2_db.utc_ms == d_dt
+        assert t2_db.local == d_dt
 
         dt += datetime.timedelta(days=1, seconds=3600)
         dt_us = dt.microsecond / 1000000.
@@ -451,28 +460,31 @@ class TestTimestampField(ModelTestCase):
         t3 = TimestampModel.create(local_us=ts, utc_ms=utc_ts, local=ts)
 
         t3_db = TimestampModel.get(TimestampModel.local == ts)
-        self.assertEqual(t3_db.id, t3.id)
+        assert t3_db.id == t3.id
 
         expected = datetime.datetime(2016, 1, 3, 12, 12, 13)
-        self.assertEqual(t3_db.local_us, expected.replace(microsecond=654321))
-        self.assertEqual(t3_db.utc_ms, expected.replace(microsecond=654000))
-        self.assertEqual(t3_db.local, expected.replace(second=14))
+        assert t3_db.local_us == expected.replace(microsecond=654321)
+        assert t3_db.utc_ms == expected.replace(microsecond=654000)
+        assert t3_db.local == expected.replace(second=14)
 
 
 class TestBinaryTypeFromDatabase(PeeweeTestCase):
     @skip_test_if(lambda: sys.version_info[0] == 3)
     def test_binary_type_info(self):
         db_proxy = Proxy()
+
         class A(Model):
             blob_field = BlobField()
+
             class Meta:
                 database = db_proxy
 
-        self.assertTrue(A.blob_field._constructor is binary_construct)
+        assert A.blob_field._constructor is binary_construct
 
         db = SqliteDatabase(':memory:')
         db_proxy.initialize(db)
-        self.assertTrue(A.blob_field._constructor is sqlite3.Binary)
+        assert A.blob_field._constructor is sqlite3.Binary
+
 
 class TestDateTimeExtract(ModelTestCase):
     requires = [NullModel]
@@ -499,11 +511,11 @@ class TestDateTimeExtract(ModelTestCase):
 
     def assertDates(self, sq, expected):
         sq = sq.tuples().order_by(NullModel.id)
-        self.assertEqual(list(sq), [(e,) for e in expected])
+        assert list(sq) == [(e,) for e in expected]
 
     def assertPKs(self, sq, idxs):
         sq = sq.tuples().order_by(NullModel.id)
-        self.assertEqual(list(sq), [(self.nms[i].id,) for i in idxs])
+        assert list(sq) == [(self.nms[i].id,) for i in idxs]
 
     def test_extract_datetime(self):
         self.test_extract_date(NullModel.datetime_field)
@@ -576,41 +588,48 @@ class TestUniqueColumnConstraint(ModelTestCase):
     def test_unique(self):
         uniq1 = UniqueModel.create(name='a')
         uniq2 = UniqueModel.create(name='b')
-        self.assertRaises(Exception, UniqueModel.create, name='a')
+        with pytest.raises(Exception):
+            UniqueModel.create(name='a')
         test_db.rollback()
 
     def test_multi_index(self):
         mi1 = MultiIndexModel.create(f1='a', f2='a', f3='a')
         mi2 = MultiIndexModel.create(f1='b', f2='b', f3='b')
-        self.assertRaises(Exception, MultiIndexModel.create, f1='a', f2='a', f3='b')
+        with pytest.raises(Exception):
+            MultiIndexModel.create(f1='a', f2='a',
+                                   f3='b')
         test_db.rollback()
-        self.assertRaises(Exception, MultiIndexModel.create, f1='b', f2='b', f3='a')
+        with pytest.raises(Exception):
+            MultiIndexModel.create(f1='b', f2='b',
+                                   f3='a')
         test_db.rollback()
 
         mi3 = MultiIndexModel.create(f1='a', f2='b', f3='b')
+
 
 class TestNonIntegerPrimaryKey(ModelTestCase):
     requires = [NonIntModel, NonIntRelModel]
 
     def test_non_int_pk(self):
         ni1 = NonIntModel.create(pk='a1', data='ni1')
-        self.assertEqual(ni1.pk, 'a1')
+        assert ni1.pk == 'a1'
 
         ni2 = NonIntModel(pk='a2', data='ni2')
         ni2.save(force_insert=True)
-        self.assertEqual(ni2.pk, 'a2')
+        assert ni2.pk == 'a2'
 
         ni2.save()
-        self.assertEqual(ni2.pk, 'a2')
+        assert ni2.pk == 'a2'
 
-        self.assertEqual(NonIntModel.select().count(), 2)
+        assert NonIntModel.select().count() == 2
 
-        ni1_db = NonIntModel.get(NonIntModel.pk=='a1')
-        self.assertEqual(ni1_db.data, ni1.data)
+        ni1_db = NonIntModel.get(NonIntModel.pk == 'a1')
+        assert ni1_db.data == ni1.data
 
-        self.assertEqual([(x.pk, x.data) for x in NonIntModel.select().order_by(NonIntModel.pk)], [
-            ('a1', 'ni1'), ('a2', 'ni2'),
-        ])
+        assert [(x.pk, x.data) for x in
+                NonIntModel.select().order_by(NonIntModel.pk)] == [
+                   ('a1', 'ni1'), ('a2', 'ni2'),
+               ]
 
     def test_non_int_fk(self):
         ni1 = NonIntModel.create(pk='a1', data='ni1')
@@ -621,14 +640,18 @@ class TestNonIntegerPrimaryKey(ModelTestCase):
         rni11.save()
         rni12.save()
 
-        self.assertEqual([r.id for r in ni1.nr.order_by(NonIntRelModel.id)], [rni11.id, rni12.id])
-        self.assertEqual([r.id for r in ni2.nr.order_by(NonIntRelModel.id)], [])
+        assert [r.id for r in ni1.nr.order_by(NonIntRelModel.id)] == \
+               [rni11.id, rni12.id]
+        assert [r.id for r in ni2.nr.order_by(NonIntRelModel.id)] == \
+               []
 
         rni21 = NonIntRelModel.create(non_int_model=ni2)
-        self.assertEqual([r.id for r in ni2.nr.order_by(NonIntRelModel.id)], [rni21.id])
+        assert [r.id for r in ni2.nr.order_by(NonIntRelModel.id)] == \
+               [rni21.id]
 
-        sq = NonIntRelModel.select().join(NonIntModel).where(NonIntModel.data == 'ni2')
-        self.assertEqual([r.id for r in sq], [rni21.id])
+        sq = NonIntRelModel.select().join(NonIntModel).where(
+            NonIntModel.data == 'ni2')
+        assert [r.id for r in sq] == [rni21.id]
 
 
 class TestPrimaryKeyIsForeignKey(ModelTestCase):
@@ -638,15 +661,17 @@ class TestPrimaryKeyIsForeignKey(ModelTestCase):
         # we have one job, unexecuted, and therefore no executed jobs
         job = Job.create(name='Job One')
         executed_jobs = Job.select().join(JobExecutionRecord)
-        self.assertEqual([], list(executed_jobs))
+        assert [] == list(executed_jobs)
 
         # after execution, we must have one executed job
         exec_record = JobExecutionRecord.create(job=job, status='success')
         executed_jobs = Job.select().join(JobExecutionRecord)
-        self.assertEqual([job], list(executed_jobs))
+        assert [job] == list(executed_jobs)
 
         # we must not be able to create another execution record for the job
-        self.assertRaises(Exception, JobExecutionRecord.create, job=job, status='success')
+        with pytest.raises(Exception):
+            JobExecutionRecord.create(job=job,
+                                      status='success')
         test_db.rollback()
 
     def test_pk_fk_relations(self):
@@ -658,13 +683,13 @@ class TestPrimaryKeyIsForeignKey(ModelTestCase):
         jerr2 = JERRelated.create(jer=jer2)
 
         jerr_j1 = [x for x in jer1.jerrelated_set]
-        self.assertEqual(jerr_j1, [jerr1])
+        assert jerr_j1 == [jerr1]
 
         jerr_j2 = [x for x in jer2.jerrelated_set]
-        self.assertEqual(jerr_j2, [jerr2])
+        assert jerr_j2 == [jerr2]
 
         jerr1_db = JERRelated.get(JERRelated.jer == j1)
-        self.assertEqual(jerr1_db, jerr1)
+        assert jerr1_db == jerr1
 
 
 class TestFieldDatabaseColumn(ModelTestCase):
@@ -672,27 +697,31 @@ class TestFieldDatabaseColumn(ModelTestCase):
 
     def test_select(self):
         sq = DBUser.select().where(DBUser.username == 'u1')
-        self.assertSelect(sq, '"dbuser"."db_user_id", "dbuser"."db_username"', [])
+        self.assertSelect(sq, '"dbuser"."db_user_id", "dbuser"."db_username"',
+                          [])
         self.assertWhere(sq, '("dbuser"."db_username" = ?)', ['u1'])
 
-        sq = DBUser.select(DBUser.user_id).join(DBBlog).where(DBBlog.title == 'b1')
+        sq = DBUser.select(DBUser.user_id).join(DBBlog).where(
+            DBBlog.title == 'b1')
         self.assertSelect(sq, '"dbuser"."db_user_id"', [])
-        self.assertJoins(sq, ['INNER JOIN "dbblog" AS dbblog ON ("dbuser"."db_user_id" = "dbblog"."db_user")'])
+        self.assertJoins(sq, [
+            'INNER JOIN "dbblog" AS dbblog ON ("dbuser"."db_user_id" = "dbblog"."db_user")'])
         self.assertWhere(sq, '("dbblog"."db_title" = ?)', ['b1'])
 
     def test_db_column(self):
         u1 = DBUser.create(username='u1')
         u2 = DBUser.create(username='u2')
-        u2_db = DBUser.get(DBUser.user_id==u2._get_pk_value())
-        self.assertEqual(u2_db.username, 'u2')
+        u2_db = DBUser.get(DBUser.user_id == u2._get_pk_value())
+        assert u2_db.username == 'u2'
 
         b1 = DBBlog.create(user=u1, title='b1')
         b2 = DBBlog.create(user=u2, title='b2')
-        b2_db = DBBlog.get(DBBlog.blog_id==b2._get_pk_value())
-        self.assertEqual(b2_db.user.user_id, u2.user_id)
-        self.assertEqual(b2_db.title, 'b2')
+        b2_db = DBBlog.get(DBBlog.blog_id == b2._get_pk_value())
+        assert b2_db.user.user_id == u2.user_id
+        assert b2_db.title == 'b2'
 
-        self.assertEqual([b.title for b in u2.dbblog_set], ['b2'])
+        assert [b.title for b in u2.dbblog_set] == ['b2']
+
 
 class _SqliteDateTestHelper(PeeweeTestCase):
     datetimes = [
@@ -702,6 +731,7 @@ class _SqliteDateTestHelper(PeeweeTestCase):
 
     def create_date_model(self, date_fn):
         dp_db = SqliteDatabase(':memory:')
+
         class SqDp(Model):
             datetime_field = DateTimeField()
             date_field = DateField()
@@ -726,6 +756,7 @@ class _SqliteDateTestHelper(PeeweeTestCase):
 
         return SqDp
 
+
 class TestSQLiteDatePart(_SqliteDateTestHelper):
     def test_sqlite_date_part(self):
         date_fn = lambda field, part: fn.date_part(part, field)
@@ -733,24 +764,27 @@ class TestSQLiteDatePart(_SqliteDateTestHelper):
 
         for part in ('year', 'month', 'day', 'hour', 'minute', 'second'):
             for i, dp in enumerate(SqDp.date_query(SqDp.datetime_field, part)):
-                self.assertEqual(dp[0], getattr(self.datetimes[i], part))
+                assert dp[0] == getattr(self.datetimes[i], part)
 
         for part in ('year', 'month', 'day'):
             for i, dp in enumerate(SqDp.date_query(SqDp.date_field, part)):
-                self.assertEqual(dp[0], getattr(self.datetimes[i], part))
+                assert dp[0] == getattr(self.datetimes[i], part)
 
         for part in ('hour', 'minute', 'second'):
             for i, dp in enumerate(SqDp.date_query(SqDp.time_field, part)):
-                self.assertEqual(dp[0], getattr(self.datetimes[i], part))
+                assert dp[0] == getattr(self.datetimes[i], part)
 
         # ensure that the where clause works
-        query = SqDp.select().where(fn.date_part('year', SqDp.datetime_field) == 2000)
-        self.assertEqual(query.count(), 2)
+        query = SqDp.select().where(
+            fn.date_part('year', SqDp.datetime_field) == 2000)
+        assert query.count() == 2
 
-        query = SqDp.select().where(fn.date_part('month', SqDp.datetime_field) == 1)
-        self.assertEqual(query.count(), 1)
-        query = SqDp.select().where(fn.date_part('month', SqDp.datetime_field) == 3)
-        self.assertEqual(query.count(), 0)
+        query = SqDp.select().where(
+            fn.date_part('month', SqDp.datetime_field) == 1)
+        assert query.count() == 1
+        query = SqDp.select().where(
+            fn.date_part('month', SqDp.datetime_field) == 3)
+        assert query.count() == 0
 
         null_sqdp = SqDp.create(
             datetime_field=datetime.datetime.now(),
@@ -759,8 +793,8 @@ class TestSQLiteDatePart(_SqliteDateTestHelper):
             null_datetime_field=datetime.datetime(2014, 1, 1))
         query = SqDp.select().where(
             fn.date_part('year', SqDp.null_datetime_field) == 2014)
-        self.assertEqual(query.count(), 1)
-        self.assertEqual(list(query), [null_sqdp])
+        assert query.count() == 1
+        assert list(query) == [null_sqdp]
 
 
 class TestSQLiteDateTrunc(_SqliteDateTestHelper):
@@ -770,7 +804,7 @@ class TestSQLiteDateTrunc(_SqliteDateTestHelper):
 
         def assertQuery(field, part, expected):
             values = SqDp.date_query(field, part)
-            self.assertEqual([r[0] for r in values], expected)
+            assert [r[0] for r in values] == expected
 
         assertQuery(SqDp.datetime_field, 'year', ['2000', '2000'])
         assertQuery(SqDp.datetime_field, 'month', ['2000-01', '2000-02'])
@@ -800,7 +834,8 @@ class TestCheckConstraints(ModelTestCase):
             CheckModel.create(value=0)
         else:
             with test_db.transaction() as txn:
-                self.assertRaises(IntegrityError, CheckModel.create, value=0)
+                with pytest.raises(IntegrityError):
+                    CheckModel.create(value=0)
                 txn.rollback()
 
 
@@ -812,15 +847,15 @@ class TestServerDefaults(ModelTestCase):
         sd = ServerDefaultModel.create(name='baz')
         sd_db = ServerDefaultModel.get(ServerDefaultModel.id == sd.id)
 
-        self.assertEqual(sd_db.name, 'baz')
-        self.assertIsNotNone(sd_db.timestamp)
+        assert sd_db.name == 'baz'
+        assert sd_db.timestamp is not None
 
         sd2 = ServerDefaultModel.create(
             timestamp=datetime.datetime(2015, 1, 2, 3, 4))
         sd2_db = ServerDefaultModel.get(ServerDefaultModel.id == sd2.id)
 
-        self.assertEqual(sd2_db.name, 'foo')
-        self.assertEqual(sd2_db.timestamp, datetime.datetime(2015, 1, 2, 3, 4))
+        assert sd2_db.name == 'foo'
+        assert sd2_db.timestamp == datetime.datetime(2015, 1, 2, 3, 4)
 
 
 class TestUUIDField(ModelTestCase):
@@ -836,10 +871,10 @@ class TestUUIDField(ModelTestCase):
 
         t1 = TestingID.create(uniq=uuid_obj)
         t1_db = TestingID.get(TestingID.uniq == uuid_str)
-        self.assertEqual(t1, t1_db)
+        assert t1 == t1_db
 
         t2 = TestingID.get(TestingID.uniq == uuid_obj)
-        self.assertEqual(t1, t2)
+        assert t1 == t2
 
     def test_uuid_casting(self):
         uuid_obj = uuid.UUID('a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11')
@@ -848,21 +883,21 @@ class TestUUIDField(ModelTestCase):
 
         t1 = TestingID.create(uniq=uuid_obj)
         t1_db = TestingID.get(TestingID.uniq == uuid_str)
-        self.assertEqual(t1_db.uniq, uuid_obj)
+        assert t1_db.uniq == uuid_obj
         t1_db = TestingID.get(TestingID.uniq == uuid_str_short)
-        self.assertEqual(t1_db.uniq, uuid_obj)
+        assert t1_db.uniq == uuid_obj
 
         t1 = TestingID.create(uniq=uuid_str)
         t1_db = TestingID.get(TestingID.uniq == uuid_str)
-        self.assertEqual(t1_db.uniq, uuid_obj)
+        assert t1_db.uniq == uuid_obj
         t1_db = TestingID.get(TestingID.uniq == uuid_str_short)
-        self.assertEqual(t1_db.uniq, uuid_obj)
+        assert t1_db.uniq == uuid_obj
 
         t1 = TestingID.create(uniq=uuid_str_short)
         t1_db = TestingID.get(TestingID.uniq == uuid_str)
-        self.assertEqual(t1_db.uniq, uuid_obj)
+        assert t1_db.uniq == uuid_obj
         t1_db = TestingID.get(TestingID.uniq == uuid_str_short)
-        self.assertEqual(t1_db.uniq, uuid_obj)
+        assert t1_db.uniq == uuid_obj
 
     def test_uuid_foreign_keys(self):
         data_a = UUIDData.create(id=uuid.uuid4(), data='a')
@@ -873,21 +908,21 @@ class TestUUIDField(ModelTestCase):
         rel_none = UUIDRelatedModel.create(data=None, value=3)
 
         db_a = UUIDData.get(UUIDData.id == data_a.id)
-        self.assertEqual(db_a.id, data_a.id)
-        self.assertEqual(db_a.data, 'a')
+        assert db_a.id == data_a.id
+        assert db_a.data == 'a'
 
         values = [rm.value
                   for rm in db_a.related_models.order_by(UUIDRelatedModel.id)]
-        self.assertEqual(values, [1, 2])
+        assert values == [1, 2]
 
         rnone = UUIDRelatedModel.get(UUIDRelatedModel.data >> None)
-        self.assertEqual(rnone.value, 3)
+        assert rnone.value == 3
 
         ra = (UUIDRelatedModel
               .select()
               .where(UUIDRelatedModel.data == data_a)
               .order_by(UUIDRelatedModel.value.desc()))
-        self.assertEqual([r.value for r in ra], [2, 1])
+        assert [r.value for r in ra] == [2, 1]
 
     def test_prefetch_regression(self):
         a = UUIDData.create(id=uuid.uuid4(), data='a')
@@ -906,10 +941,10 @@ class TestUUIDField(ModelTestCase):
                 accum.append((item.data, [
                     rel.value for rel in item.related_models_prefetch]))
 
-            self.assertEqual(accum, [
+            assert accum == [
                 ('a', [0, 1, 2]),
                 ('b', [0, 1, 2]),
-            ])
+            ]
 
 
 @skip_unless(lambda: isinstance(test_db, SqliteDatabase))
@@ -921,18 +956,18 @@ class TestForeignKeyConversion(ModelTestCase):
         u2 = UIntModel.create(data=(1 << 31) + 1000)
 
         u1_db = UIntModel.get(UIntModel.data == 1337)
-        self.assertEqual(u1_db.id, u1.id)
+        assert u1_db.id == u1.id
         u2_db = UIntModel.get(UIntModel.data == (1 << 31) + 1000)
-        self.assertEqual(u2_db.id, u2.id)
+        assert u2_db.id == u2.id
 
         ur1 = UIntRelModel.create(uint_model=u1)
         ur2 = UIntRelModel.create(uint_model=u2)
 
-        self.assertEqual(ur1.uint_model_id, 1337)
-        self.assertEqual(ur2.uint_model_id, (1 << 31) + 1000)
+        assert ur1.uint_model_id == 1337
+        assert ur2.uint_model_id == (1 << 31) + 1000
 
         ur1_db = UIntRelModel.get(UIntRelModel.id == ur1.id)
         ur2_db = UIntRelModel.get(UIntRelModel.id == ur2.id)
 
-        self.assertEqual(ur1_db.uint_model.id, u1.id)
-        self.assertEqual(ur2_db.uint_model.id, u2.id)
+        assert ur1_db.uint_model.id == u1.id
+        assert ur2_db.uint_model.id == u2.id

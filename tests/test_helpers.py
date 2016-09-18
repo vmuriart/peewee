@@ -4,6 +4,7 @@ from peewee import *
 from peewee import sort_models_topologically
 from tests.base import PeeweeTestCase
 from tests.base import test_db
+import pytest
 
 
 class TestHelperMethods(PeeweeTestCase):
@@ -29,8 +30,10 @@ class TestHelperMethods(PeeweeTestCase):
             with self.assertQueryCount(1):
                 execute_queries(2)
 
-        self.assertRaises(AssertionError, fails_low)
-        self.assertRaises(AssertionError, fails_high)
+        with pytest.raises(AssertionError):
+            fails_low()
+        with pytest.raises(AssertionError):
+            fails_high()
 
 
 class TestTopologicalSorting(PeeweeTestCase):
@@ -56,16 +59,16 @@ class TestTopologicalSorting(PeeweeTestCase):
         for input_ordering in permutations([A, B, C, D, E]):
             output_ordering = sort_models_topologically(input_ordering)
             repeatable_ordering = repeatable_ordering or output_ordering
-            self.assertEqual(repeatable_ordering, output_ordering)
+            assert repeatable_ordering == output_ordering
 
         # property 2: output ordering must have same models as input
-        self.assertEqual(len(output_ordering), 5)
-        self.assertFalse(Excluded in output_ordering)
+        assert len(output_ordering) == 5
+        assert not (Excluded in output_ordering)
 
         # property 3: parents must precede children
         def assert_precedes(X, Y):
             lhs, rhs = map(output_ordering.index, [X, Y])
-            self.assertTrue(lhs < rhs)
+            assert lhs < rhs
 
         assert_precedes(A, B)
         assert_precedes(B, C)  # if true, C follows A by transitivity

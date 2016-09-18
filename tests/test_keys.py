@@ -11,6 +11,7 @@ from tests.base import skip_if
 from tests.base import skip_test_if
 from tests.base import test_db
 from tests.models import *
+import pytest
 
 
 class TestForeignKeyToNonPrimaryKey(ModelTestCase):
@@ -28,14 +29,13 @@ class TestForeignKeyToNonPrimaryKey(ModelTestCase):
 
     def test_fk_resolution(self):
         pi = PackageItem.get(PackageItem.title == '101-0')
-        self.assertEqual(pi._data['package'], '101')
-        self.assertEqual(pi.package, Package.get(Package.barcode == '101'))
+        assert pi._data['package'] == '101'
+        assert pi.package == Package.get(Package.barcode == '101')
 
     def test_select_generation(self):
         p = Package.get(Package.barcode == '101')
-        self.assertEqual(
-            [item.title for item in p.items.order_by(PackageItem.title)],
-            ['101-0', '101-1'])
+        assert [item.title for item in p.items.order_by(PackageItem.title)] == \
+               ['101-0', '101-1']
 
 
 class TestMultipleForeignKey(ModelTestCase):
@@ -113,11 +113,11 @@ class TestMultipleForeignKey(ModelTestCase):
                     else:
                         manufacturers.append(None)
 
-            self.assertEqual(vals, self.test_values)
-            self.assertEqual(manufacturers, [
+            assert vals == self.test_values
+            assert manufacturers == [
                 None, 'Kingston', 'Intel',
                 None, 'Kingston', 'AMD',
-            ])
+            ]
 
 
 class TestMultipleForeignKeysJoining(ModelTestCase):
@@ -128,46 +128,46 @@ class TestMultipleForeignKeysJoining(ModelTestCase):
         b = User.create(username='b')
         c = User.create(username='c')
 
-        self.assertEqual(list(a.relationships), [])
-        self.assertEqual(list(a.related_to), [])
+        assert list(a.relationships) == []
+        assert list(a.related_to) == []
 
         r_ab = Relationship.create(from_user=a, to_user=b)
-        self.assertEqual(list(a.relationships), [r_ab])
-        self.assertEqual(list(a.related_to), [])
-        self.assertEqual(list(b.relationships), [])
-        self.assertEqual(list(b.related_to), [r_ab])
+        assert list(a.relationships) == [r_ab]
+        assert list(a.related_to) == []
+        assert list(b.relationships) == []
+        assert list(b.related_to) == [r_ab]
 
         r_bc = Relationship.create(from_user=b, to_user=c)
 
         following = User.select().join(
             Relationship, on=Relationship.to_user
         ).where(Relationship.from_user == a)
-        self.assertEqual(list(following), [b])
+        assert list(following) == [b]
 
         followers = User.select().join(
             Relationship, on=Relationship.from_user
         ).where(Relationship.to_user == a.id)
-        self.assertEqual(list(followers), [])
+        assert list(followers) == []
 
         following = User.select().join(
             Relationship, on=Relationship.to_user
         ).where(Relationship.from_user == b.id)
-        self.assertEqual(list(following), [c])
+        assert list(following) == [c]
 
         followers = User.select().join(
             Relationship, on=Relationship.from_user
         ).where(Relationship.to_user == b.id)
-        self.assertEqual(list(followers), [a])
+        assert list(followers) == [a]
 
         following = User.select().join(
             Relationship, on=Relationship.to_user
         ).where(Relationship.from_user == c.id)
-        self.assertEqual(list(following), [])
+        assert list(following) == []
 
         followers = User.select().join(
             Relationship, on=Relationship.from_user
         ).where(Relationship.to_user == c.id)
-        self.assertEqual(list(followers), [b])
+        assert list(followers) == [b]
 
 
 class TestCompositePrimaryKey(ModelTestCase):
@@ -185,15 +185,14 @@ class TestCompositePrimaryKey(ModelTestCase):
 
     def test_create_table_query(self):
         query, params = compiler.create_table(TagPostThrough)
-        self.assertEqual(
-            query,
-            'CREATE TABLE "tagpostthrough" '
-            '("tag_id" INTEGER NOT NULL, '
-            '"post_id" INTEGER NOT NULL, '
-            'PRIMARY KEY ("tag_id", "post_id"), '
-            'FOREIGN KEY ("tag_id") REFERENCES "tag" ("id"), '
-            'FOREIGN KEY ("post_id") REFERENCES "post" ("id")'
-            ')')
+        assert query == \
+               'CREATE TABLE "tagpostthrough" ' \
+               '("tag_id" INTEGER NOT NULL, ' \
+               '"post_id" INTEGER NOT NULL, ' \
+               'PRIMARY KEY ("tag_id", "post_id"), ' \
+               'FOREIGN KEY ("tag_id") REFERENCES "tag" ("id"), ' \
+               'FOREIGN KEY ("post_id") REFERENCES "post" ("id")' \
+               ')'
 
     def test_get_set_id(self):
         tpt = (TagPostThrough
@@ -203,16 +202,16 @@ class TestCompositePrimaryKey(ModelTestCase):
                .join(Post)
                .order_by(Tag.tag, Post.title)).get()
         # Sanity check.
-        self.assertEqual(tpt.tag.tag, 't1')
-        self.assertEqual(tpt.post.title, 'p1')
+        assert tpt.tag.tag == 't1'
+        assert tpt.post.title == 'p1'
 
         tag = Tag.select().where(Tag.tag == 't1').get()
         post = Post.select().where(Post.title == 'p1').get()
-        self.assertEqual(tpt._get_pk_value(), (tag, post))
+        assert tpt._get_pk_value() == (tag, post)
 
         # set_id is a no-op.
         tpt._set_pk_value(None)
-        self.assertEqual(tpt._get_pk_value(), (tag, post))
+        assert tpt._get_pk_value() == (tag, post)
 
     def test_querying(self):
         posts = (Post.select()
@@ -220,14 +219,14 @@ class TestCompositePrimaryKey(ModelTestCase):
                  .join(Tag)
                  .where(Tag.tag == 't1')
                  .order_by(Post.title))
-        self.assertEqual([p.title for p in posts], ['p1', 'p12'])
+        assert [p.title for p in posts] == ['p1', 'p12']
 
         tags = (Tag.select()
                 .join(TagPostThrough)
                 .join(Post)
                 .where(Post.title == 'p12')
                 .order_by(Tag.tag))
-        self.assertEqual([t.tag for t in tags], ['t1', 't2'])
+        assert [t.tag for t in tags] == ['t1', 't2']
 
     def test_composite_key_model(self):
         CKM = CompositeKeyModel
@@ -243,25 +242,26 @@ class TestCompositePrimaryKey(ModelTestCase):
         CKM.update(f3=3.0).where((CKM.f1 == 'a') & (CKM.f2 == 2)).execute()
 
         c = CKM.get((CKM.f1 == 'a') & (CKM.f2 == 2))
-        self.assertEqual(c.f3, 3.0)
+        assert c.f3 == 3.0
 
         # Update the `f3` value and call `save()`, triggering an update.
         c3.f3 = 4.0
         c3.save()
 
         c = CKM.get((CKM.f1 == 'b') & (CKM.f2 == 1))
-        self.assertEqual(c.f3, 4.0)
+        assert c.f3 == 4.0
 
         # Only 1 row updated.
         query = CKM.select().where(CKM.f3 == 4.0)
-        self.assertEqual(query.wrapped_count(), 1)
+        assert query.wrapped_count() == 1
 
         # Unfortunately this does not work since the original value of the
         # PK is lost (and hence cannot be used to update).
         c4.f1 = 'c'
         c4.save()
-        self.assertRaises(
-            CKM.DoesNotExist, CKM.get, (CKM.f1 == 'c') & (CKM.f2 == 2))
+        with pytest.raises(
+            CKM.DoesNotExist):
+            CKM.get((CKM.f1 == 'c') & (CKM.f2 == 2))
 
     def test_count_composite_key(self):
         CKM = CompositeKeyModel
@@ -273,14 +273,14 @@ class TestCompositePrimaryKey(ModelTestCase):
         for f1, f2, f3 in values:
             CKM.create(f1=f1, f2=f2, f3=f3)
 
-        self.assertEqual(CKM.select().wrapped_count(), 4)
-        self.assertEqual(CKM.select().count(), 4)
-        self.assertTrue(CKM.select().where(
+        assert CKM.select().wrapped_count() == 4
+        assert CKM.select().count() == 4
+        assert CKM.select().where(
             (CKM.f1 == 'a') &
-            (CKM.f2 == 1)).exists())
-        self.assertFalse(CKM.select().where(
+            (CKM.f2 == 1)).exists()
+        assert not CKM.select().where(
             (CKM.f1 == 'a') &
-            (CKM.f2 == 3)).exists())
+            (CKM.f2 == 3)).exists()
 
     def test_delete_instance(self):
         u1, u2 = [User.create(username='u%s' % i) for i in range(2)]
@@ -290,10 +290,10 @@ class TestCompositePrimaryKey(ModelTestCase):
         ut4 = UserThing.create(thing='t3', user=u2)
 
         res = ut1.delete_instance()
-        self.assertEqual(res, 1)
-        self.assertEqual(
-            [x.thing for x in UserThing.select().order_by(UserThing.thing)],
-            ['t1', 't2', 't3'])
+        assert res == 1
+        assert [x.thing for x in
+                UserThing.select().order_by(UserThing.thing)] == \
+               ['t1', 't2', 't3']
 
 
 class TestForeignKeyNonPrimaryKeyCreateTable(PeeweeTestCase):
@@ -313,20 +313,18 @@ class TestForeignKeyNonPrimaryKeyCreateTable(PeeweeTestCase):
             a = ForeignKeyField(A, to_field='df')
 
         cf_create, _ = compiler.create_table(CF)
-        self.assertEqual(
-            cf_create,
-            'CREATE TABLE "cf" ('
-            '"id" INTEGER NOT NULL PRIMARY KEY, '
-            '"a_id" VARCHAR(100) NOT NULL, '
-            'FOREIGN KEY ("a_id") REFERENCES "a" ("cf"))')
+        assert cf_create == \
+               'CREATE TABLE "cf" (' \
+               '"id" INTEGER NOT NULL PRIMARY KEY, ' \
+               '"a_id" VARCHAR(100) NOT NULL, ' \
+               'FOREIGN KEY ("a_id") REFERENCES "a" ("cf"))'
 
         df_create, _ = compiler.create_table(DF)
-        self.assertEqual(
-            df_create,
-            'CREATE TABLE "df" ('
-            '"id" INTEGER NOT NULL PRIMARY KEY, '
-            '"a_id" DECIMAL(4, 2) NOT NULL, '
-            'FOREIGN KEY ("a_id") REFERENCES "a" ("df"))')
+        assert df_create == \
+               'CREATE TABLE "df" (' \
+               '"id" INTEGER NOT NULL PRIMARY KEY, ' \
+               '"a_id" DECIMAL(4, 2) NOT NULL, ' \
+               'FOREIGN KEY ("a_id") REFERENCES "a" ("df"))'
 
 
 class TestDeferredForeignKey(ModelTestCase):
@@ -345,9 +343,9 @@ class TestDeferredForeignKey(ModelTestCase):
         Language.drop_table(True)
 
     def test_field_definitions(self):
-        self.assertEqual(Snippet._meta.fields['language'].rel_model, Language)
-        self.assertEqual(Language._meta.fields['selected_snippet'].rel_model,
-                         Snippet)
+        assert Snippet._meta.fields['language'].rel_model == Language
+        assert Language._meta.fields['selected_snippet'].rel_model == \
+               Snippet
 
     def test_deferred_relation_resolution(self):
         orig = len(DeferredRelation._unresolved)
@@ -357,33 +355,31 @@ class TestDeferredForeignKey(ModelTestCase):
                 DeferredRelation('circularref2'),
                 null=True)
 
-        self.assertEqual(len(DeferredRelation._unresolved), orig + 1)
+        assert len(DeferredRelation._unresolved) == orig + 1
 
         class CircularRef2(Model):
             circ_ref1 = ForeignKeyField(CircularRef1, null=True)
 
-        self.assertEqual(CircularRef1.circ_ref2.rel_model, CircularRef2)
-        self.assertEqual(CircularRef2.circ_ref1.rel_model, CircularRef1)
-        self.assertEqual(len(DeferredRelation._unresolved), orig)
+        assert CircularRef1.circ_ref2.rel_model == CircularRef2
+        assert CircularRef2.circ_ref1.rel_model == CircularRef1
+        assert len(DeferredRelation._unresolved) == orig
 
     def test_create_table_query(self):
         query, params = compiler.create_table(Snippet)
-        self.assertEqual(
-            query,
-            'CREATE TABLE "snippet" '
-            '("id" INTEGER NOT NULL PRIMARY KEY, '
-            '"code" TEXT NOT NULL, '
-            '"language_id" INTEGER NOT NULL, '
-            'FOREIGN KEY ("language_id") REFERENCES "language" ("id")'
-            ')')
+        assert query == \
+               'CREATE TABLE "snippet" ' \
+               '("id" INTEGER NOT NULL PRIMARY KEY, ' \
+               '"code" TEXT NOT NULL, ' \
+               '"language_id" INTEGER NOT NULL, ' \
+               'FOREIGN KEY ("language_id") REFERENCES "language" ("id")' \
+               ')'
 
         query, params = compiler.create_table(Language)
-        self.assertEqual(
-            query,
-            'CREATE TABLE "language" '
-            '("id" INTEGER NOT NULL PRIMARY KEY, '
-            '"name" VARCHAR(255) NOT NULL, '
-            '"selected_snippet_id" INTEGER)')
+        assert query == \
+               'CREATE TABLE "language" ' \
+               '("id" INTEGER NOT NULL PRIMARY KEY, ' \
+               '"name" VARCHAR(255) NOT NULL, ' \
+               '"selected_snippet_id" INTEGER)'
 
     def test_storage_retrieval(self):
         python = Language.create(name='python')
@@ -392,16 +388,15 @@ class TestDeferredForeignKey(ModelTestCase):
         p2 = Snippet.create(code="print 'Goodbye world'", language=python)
         j1 = Snippet.create(code="alert('Hello world')", language=javascript)
 
-        self.assertEqual(Snippet.get(Snippet.id == p1.id).language, python)
-        self.assertEqual(Snippet.get(Snippet.id == j1.id).language, javascript)
+        assert Snippet.get(Snippet.id == p1.id).language == python
+        assert Snippet.get(Snippet.id == j1.id).language == javascript
 
         python.selected_snippet = p2
         python.save()
 
-        self.assertEqual(
-            Language.get(Language.id == python.id).selected_snippet, p2)
-        self.assertEqual(
-            Language.get(Language.id == javascript.id).selected_snippet, None)
+        assert Language.get(Language.id == python.id).selected_snippet == p2
+        assert Language.get(
+            Language.id == javascript.id).selected_snippet == None
 
 
 class TestSQLiteDeferredForeignKey(PeeweeTestCase):
@@ -427,9 +422,9 @@ class TestSQLiteDeferredForeignKey(PeeweeTestCase):
             Tweet.create_table()
 
         # SQLite does not support alter + add constraint.
-        self.assertRaises(
-            OperationalError,
-            lambda: db.create_foreign_key(User, User.favorite_tweet))
+        with pytest.raises(
+            OperationalError):
+            db.create_foreign_key(User, User.favorite_tweet)
 
 
 class TestForeignKeyConstraints(ModelTestCase):
@@ -458,7 +453,8 @@ class TestForeignKeyConstraints(ModelTestCase):
             with test_db.transaction() as txn:
                 Blog.create(user=max_id + 1, title='testing')
 
-        self.assertRaises(IntegrityError, will_fail)
+        with pytest.raises(IntegrityError):
+            will_fail()
 
     @skip_test_if(lambda: isinstance(test_db, SqliteDatabase))
     def test_constraint_creation(self):
@@ -489,7 +485,8 @@ class TestForeignKeyConstraints(ModelTestCase):
                 with test_db.savepoint() as s1:
                     fb = FKC_b.create(fkc_a=-1000)
 
-            self.assertRaises(IntegrityError, _trigger_exc)
+            with pytest.raises(IntegrityError):
+                _trigger_exc()
 
             fa = FKC_a.create(name='fa')
             fb = FKC_b.create(fkc_a=fa)

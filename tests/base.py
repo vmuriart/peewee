@@ -182,10 +182,10 @@ class PeeweeTestCase(TestCase):
         logger.removeHandler(self.qh)
 
     def assertIsNone(self, value):
-        self.assertTrue(value is None, '%r is not None' % value)
+        assert value is None, '%r is not None' % value
 
     def assertIsNotNone(self, value):
-        self.assertFalse(value is None)
+        assert value is not None
 
     @contextmanager
     def assertRaisesCtx(self, exc_class):
@@ -207,7 +207,7 @@ class PeeweeTestCase(TestCase):
     def assertQueryCount(self, num, ignore_txn=False):
         qc = len(self.queries(ignore_txn=ignore_txn))
         yield
-        self.assertEqual(len(self.queries(ignore_txn=ignore_txn)) - qc, num)
+        assert len(self.queries(ignore_txn=ignore_txn)) - qc == num
 
     def log_queries(self):
         return QueryLogger(self)
@@ -227,8 +227,8 @@ class PeeweeTestCase(TestCase):
             fn = getattr(self, fn_name)
             att = getattr(query, attr_name)
             sql, params = fn(query, att, compiler=compiler)
-            self.assertEqual(sql, expected)
-            self.assertEqual(params, expected_params)
+            assert sql == expected
+            assert params == expected_params
 
         return inner
 
@@ -242,7 +242,7 @@ class PeeweeTestCase(TestCase):
         am = compiler.calculate_alias_map(sq)
         clauses = compiler.generate_joins(sq._joins, sq.model_class, am)
         joins = [compiler.parse_node(clause, am)[0] for clause in clauses]
-        self.assertEqual(sorted(joins), sorted(exp_joins))
+        assert sorted(joins) == sorted(exp_joins)
 
     def new_connection(self):
         return database_initializer.get_database()
