@@ -152,10 +152,8 @@ class TestQueryResultWrapper(ModelTestCase):
                     title='blog-{0!s}-{1!s}'.format(i, j),
                     user=User.get(User.username == 'u{0!s}'.format(i)))
 
-        qr = (User
-              .select(
-            User.username,
-            fn.Count(Blog.pk).alias('ct'))
+        qr = (User.select(User.username,
+                          fn.Count(Blog.pk).alias('ct'))
               .join(Blog)
               .where(User.username << ['u1', 'u2', 'u3'])
               .group_by(User)
@@ -167,10 +165,9 @@ class TestQueryResultWrapper(ModelTestCase):
             for user in qr.iterator():
                 accum.append((user.username, user.ct))
 
-        assert accum == [
-            ('u1', 1),
-            ('u2', 2),
-            ('u3', 3)]
+        assert accum == [('u1', 1),
+                         ('u2', 2),
+                         ('u3', 3)]
 
         qr = (User
               .select(fn.Count(User.id).alias('ct'))
@@ -186,8 +183,8 @@ class TestQueryResultWrapper(ModelTestCase):
 
     def test_fill_cache(self):
         def assertUsernames(qr, n):
-            assert [u.username for u in qr._result_cache] == \
-                   ['u{0:d}'.format(i) for i in range(1, n + 1)]
+            assert [u.username for u in qr._result_cache] == [
+                'u{0:d}'.format(i) for i in range(1, n + 1)]
 
         User.create_users(20)
 
@@ -235,9 +232,8 @@ class TestQueryResultWrapper(ModelTestCase):
             assert [c.blog.title for c in comments] == ['b1', 'b1']
 
         # missing blog.pk
-        comments = (Comment
-                    .select(Comment.id, Comment.comment, Comment.blog,
-                            Blog.title)
+        comments = (Comment.select(Comment.id, Comment.comment, Comment.blog,
+                                   Blog.title)
                     .join(Blog)
                     .where(Blog.title == 'b2')
                     .order_by(Comment.id))
@@ -245,8 +241,7 @@ class TestQueryResultWrapper(ModelTestCase):
             assert [c.blog.title for c in comments] == ['b2', 'b2']
 
         # both but going up 2 levels
-        comments = (Comment
-                    .select(Comment, Blog, User)
+        comments = (Comment.select(Comment, Blog, User)
                     .join(Blog)
                     .join(User)
                     .where(User.username == 'u1')
@@ -254,26 +249,22 @@ class TestQueryResultWrapper(ModelTestCase):
         with self.assertQueryCount(1):
             assert [c.comment for c in comments] == ['c11', 'c12']
             assert [c.blog.title for c in comments] == ['b1', 'b1']
-            assert [c.blog.user.username for c in comments] == \
-                   ['u1', 'u1']
+            assert [c.blog.user.username for c in comments] == ['u1', 'u1']
 
         assert isinstance(comments._qr, ModelQueryResultWrapper)
 
-        comments = (Comment
-                    .select()
+        comments = (Comment.select()
                     .join(Blog)
                     .join(User)
                     .where(User.username == 'u1')
                     .order_by(Comment.id))
         with self.assertQueryCount(5):
-            assert [c.blog.user.username for c in comments] == \
-                   ['u1', 'u1']
+            assert [c.blog.user.username for c in comments] == ['u1', 'u1']
 
         assert isinstance(comments._qr, NaiveQueryResultWrapper)
 
         # Go up two levels and use aliases for the joined instances.
-        comments = (Comment
-                    .select(Comment, Blog, User)
+        comments = (Comment.select(Comment, Blog, User)
                     .join(Blog, on=(Comment.blog == Blog.pk).alias('bx'))
                     .join(User, on=(Blog.user == User.id).alias('ux'))
                     .where(User.username == 'u1')
@@ -281,8 +272,7 @@ class TestQueryResultWrapper(ModelTestCase):
         with self.assertQueryCount(1):
             assert [c.comment for c in comments] == ['c11', 'c12']
             assert [c.bx.title for c in comments] == ['b1', 'b1']
-            assert [c.bx.ux.username for c in comments] == \
-                   ['u1', 'u1']
+            assert [c.bx.ux.username for c in comments] == ['u1', 'u1']
 
     def test_naive(self):
         u1 = User.create(username='u1')
@@ -307,35 +297,30 @@ class TestQueryResultWrapper(ModelTestCase):
         b1 = Blog.create(user=u1, title='b1')
         b2 = Blog.create(user=u2, title='b2')
         users = User.select().tuples().order_by(User.id)
-        assert [r for r in users] == [
-            (u1.id, 'u1'),
-            (u2.id, 'u2'),
-        ]
+        assert [r for r in users] == [(u1.id, 'u1'),
+                                      (u2.id, 'u2')]
 
         users = User.select().dicts()
         assert [r for r in users] == [
             {'id': u1.id, 'username': 'u1'},
-            {'id': u2.id, 'username': 'u2'},
-        ]
+            {'id': u2.id, 'username': 'u2'}]
 
         users = User.select(User, Blog).join(Blog).order_by(User.id).tuples()
         assert [r for r in users] == [
             (u1.id, 'u1', b1.pk, u1.id, 'b1', '', None),
-            (u2.id, 'u2', b2.pk, u2.id, 'b2', '', None),
-        ]
+            (u2.id, 'u2', b2.pk, u2.id, 'b2', '', None)]
 
         users = User.select(User, Blog).join(Blog).order_by(User.id).dicts()
         assert [r for r in users] == [
             {'id': u1.id, 'username': 'u1', 'pk': b1.pk, 'user': u1.id,
              'title': 'b1', 'content': '', 'pub_date': None},
             {'id': u2.id, 'username': 'u2', 'pk': b2.pk, 'user': u2.id,
-             'title': 'b2', 'content': '', 'pub_date': None},
-        ]
+             'title': 'b2', 'content': '', 'pub_date': None}]
 
     def test_slicing_dicing(self):
         def assertUsernames(users, nums):
-            assert [u.username for u in users] == \
-                   ['u{0:d}'.format(i) for i in nums]
+            assert [u.username for u in users] == ['u{0:d}'.format(i) for i in
+                                                   nums]
 
         User.create_users(10)
 
@@ -468,8 +453,7 @@ class TestQueryResultWrapper(ModelTestCase):
         assert results == ['u1', 'u2']
 
         # Force ModelQueryResultWrapper.
-        q = (User
-             .select(User.username.alias('xx'), Blog.pk)
+        q = (User.select(User.username.alias('xx'), Blog.pk)
              .join(Blog, JOIN.LEFT_OUTER)
              .order_by(User.username))
         results = [user.xx for user in q]
@@ -477,10 +461,8 @@ class TestQueryResultWrapper(ModelTestCase):
 
         # Use Model and Field aliases.
         UA = User.alias()
-        q = (User
-             .select(
-            User.username.alias('x'),
-            UA.username.alias('y'))
+        q = (User.select(User.username.alias('x'),
+                         UA.username.alias('y'))
              .join(UA, on=(User.id == UA.id).alias('z'))
              .order_by(User.username))
         results = [(user.x, user.z.y) for user in q]
@@ -491,10 +473,8 @@ class TestQueryResultWrapper(ModelTestCase):
         assert results == [('u1', 'u1'), ('u2', 'u2')]
 
         uq = User.select(User.id, User.username).alias('u2')
-        q = (User
-             .select(
-            User.username.alias('x'),
-            uq.c.username.alias('y'))
+        q = (User.select(User.username.alias('x'),
+                         uq.c.username.alias('y'))
              .join(uq, on=(User.id == uq.c.id))
              .order_by(User.username))
         results = [(user.x, user.y) for user in q]
@@ -540,8 +520,7 @@ class TestJoinedInstanceConstruction(ModelTestCase):
 
     def test_backref_missing_pk(self):
         with self.assertQueryCount(1):
-            q = (User
-                 .select(User.username, Blog.title)
+            q = (User.select(User.username, Blog.title)
                  .join(Blog)
                  .order_by(User.username, Blog.title))
             results = []
@@ -554,8 +533,7 @@ class TestJoinedInstanceConstruction(ModelTestCase):
 
     def test_fk_join_expr(self):
         with self.assertQueryCount(1):
-            q = (User
-                 .select(User.username, Blog.title)
+            q = (User.select(User.username, Blog.title)
                  .join(Blog, on=(User.id == Blog.user).alias('bx'))
                  .order_by(User.username))
             results = []
@@ -564,8 +542,7 @@ class TestJoinedInstanceConstruction(ModelTestCase):
             assert results == [('u1', 'b1'), ('u2', 'b2')]
 
         with self.assertQueryCount(1):
-            q = (Blog
-                 .select(Blog.title, User.username)
+            q = (Blog.select(Blog.title, User.username)
                  .join(User, on=(Blog.user == User.id).alias('ux'))
                  .order_by(Blog.title))
             results = []
@@ -609,15 +586,13 @@ class TestJoinedInstanceConstruction(ModelTestCase):
                  .join(B, on=B.user)
                  .order_by(U.username, B.title))
             results = [(user.username, user.blog.title) for user in q]
-            assert results == \
-                   [('u1', 'b1'), ('u2', 'b2'), ('u2', 'b2-2')]
+            assert results == [('u1', 'b1'), ('u2', 'b2'), ('u2', 'b2-2')]
 
     def test_subqueries(self):
         uq = User.select()
         bq = Blog.select(Blog.title, Blog.user).alias('bq')
         with self.assertQueryCount(1):
-            q = (User
-                 .select(User, bq.c.title.bind_to(Blog))
+            q = (User.select(User, bq.c.title.bind_to(Blog))
                  .join(bq, on=(User.id == bq.c.user_id).alias('blog'))
                  .order_by(User.username))
             results = []
@@ -643,14 +618,12 @@ class TestJoinedInstanceConstruction(ModelTestCase):
 
             results = [(r.from_user.username, r.to_user.username) for r in q]
 
-        assert results == [
-            ('u0', 'u1'),
-            ('u0', 'u2'),
-            ('u0', 'u3'),
-            ('u1', 'u2'),
-            ('u1', 'u3'),
-            ('u2', 'u3'),
-        ]
+        assert results == [('u0', 'u1'),
+                           ('u0', 'u2'),
+                           ('u0', 'u3'),
+                           ('u1', 'u2'),
+                           ('u1', 'u3'),
+                           ('u2', 'u3')]
 
         with self.assertQueryCount(1):
             ToUser = User.alias()
@@ -665,14 +638,12 @@ class TestJoinedInstanceConstruction(ModelTestCase):
 
             results = [(r.from_user.username, r.to_user.username) for r in q]
 
-        assert results == [
-            ('u0', 'u1'),
-            ('u0', 'u2'),
-            ('u0', 'u3'),
-            ('u1', 'u2'),
-            ('u1', 'u3'),
-            ('u2', 'u3'),
-        ]
+        assert results == [('u0', 'u1'),
+                           ('u0', 'u2'),
+                           ('u0', 'u3'),
+                           ('u1', 'u2'),
+                           ('u1', 'u3'),
+                           ('u2', 'u3')]
 
 
 class TestQueryResultTypeConversion(ModelTestCase):
@@ -685,8 +656,8 @@ class TestQueryResultTypeConversion(ModelTestCase):
 
     def assertNames(self, query, expected, attr='username'):
         id_field = query.model_class.id
-        assert [getattr(item, attr) for item in query.order_by(id_field)] == \
-               expected
+        assert ([getattr(item, attr) for item in
+                 query.order_by(id_field)] == expected)
 
     def test_simple_select(self):
         query = UpperUser.select()
@@ -701,13 +672,11 @@ class TestQueryResultTypeConversion(ModelTestCase):
         self.assertNames(query, ['U0', 'U1', 'U2'], 'foo')
 
     def test_scalar(self):
-        max_username = (UpperUser
-                        .select(fn.Max(UpperUser.username))
+        max_username = (UpperUser.select(fn.Max(UpperUser.username))
                         .scalar(convert=True))
         assert max_username == 'U2'
 
-        max_username = (UpperUser
-                        .select(fn.Max(UpperUser.username))
+        max_username = (UpperUser.select(fn.Max(UpperUser.username))
                         .scalar())
         assert max_username == 'u2'
 
@@ -747,19 +716,17 @@ class TestQueryResultTypeConversion(ModelTestCase):
 class TestModelQueryResultWrapper(ModelTestCase):
     requires = [TestModelA, TestModelB, TestModelC, User, Blog]
 
-    data = (
-        (TestModelA, (
-            ('pk1', 'a1'),
-            ('pk2', 'a2'),
-            ('pk3', 'a3'))),
-        (TestModelB, (
-            ('pk1', 'b1'),
-            ('pk2', 'b2'),
-            ('pk3', 'b3'))),
-        (TestModelC, (
-            ('pk1', 'c1'),
-            ('pk2', 'c2'))),
-    )
+    data = ((TestModelA, (
+        ('pk1', 'a1'),
+        ('pk2', 'a2'),
+        ('pk3', 'a3'))),
+            (TestModelB, (
+                ('pk1', 'b1'),
+                ('pk2', 'b2'),
+                ('pk3', 'b3'))),
+            (TestModelC, (
+                ('pk1', 'c1'),
+                ('pk2', 'c2'))),)
 
     def setUp(self):
         super(TestModelQueryResultWrapper, self).setUp()
@@ -769,15 +736,13 @@ class TestModelQueryResultWrapper(ModelTestCase):
 
     def test_join_expr(self):
         def get_query(join_type=JOIN.INNER):
-            sq = (TestModelA
-                  .select(TestModelA, TestModelB, TestModelC)
-                  .join(
-                TestModelB,
-                on=(TestModelA.field == TestModelB.field).alias('rel_b'))
-                  .join(
-                TestModelC,
-                join_type=join_type,
-                on=(TestModelB.field == TestModelC.field))
+            sq = (TestModelA.select(TestModelA, TestModelB, TestModelC)
+                  .join(TestModelB,
+                        on=(TestModelA.field == TestModelB.field).alias(
+                            'rel_b'))
+                  .join(TestModelC,
+                        join_type=join_type,
+                        on=(TestModelB.field == TestModelC.field))
                   .order_by(TestModelA.field))
             return sq
 
@@ -810,14 +775,12 @@ class TestModelQueryResultWrapper(ModelTestCase):
         # Create an additional blog for user 2.
         Blog.create(title='b-u2-2', user=u2)
 
-        res = (User
-               .select(User.username, Blog.title)
+        res = (User.select(User.username, Blog.title)
                .join(Blog)
                .order_by(User.username.asc(), Blog.title.asc()))
-        assert [(u.username, u.blog.title) for u in res] == [
-            ('u1', 'b-u1'),
-            ('u2', 'b-u2'),
-            ('u2', 'b-u2-2')]
+        assert [(u.username, u.blog.title) for u in res] == [('u1', 'b-u1'),
+                                                             ('u2', 'b-u2'),
+                                                             ('u2', 'b-u2-2')]
 
     def test_joins_with_aliases(self):
         u1 = User.create(username='u1')
@@ -840,11 +803,9 @@ class TestModelQueryResultWrapper(ModelTestCase):
                     for blog in query:
                         accum.append((blog.user.username, blog.title))
 
-            assert accum == [
-                ('u1', 'b1-1'),
-                ('u1', 'b1-2'),
-                ('u2', 'b2-1'),
-            ]
+            assert accum == [('u1', 'b1-1'),
+                             ('u1', 'b1-2'),
+                             ('u2', 'b2-1')]
 
         combinations = [
             (User, BlogAlias, User.id == BlogAlias.user, True),
@@ -856,8 +817,7 @@ class TestModelQueryResultWrapper(ModelTestCase):
             (Blog, UserAlias, Blog.user == UserAlias.id, False),
             (Blog, User, User.id == Blog.user, False),
             (Blog, User, Blog.user == User.id, False),
-            (Blog, User, None, False),
-        ]
+            (Blog, User, None, False)]
         for Src, JoinModel, predicate, is_user_query in combinations:
             query = (Src
                      .select(Src, JoinModel)
@@ -920,8 +880,7 @@ class TestSelectRelatedForeignKeyToNonPrimaryKey(ModelTestCase):
                      .join(Package)
                      .where(Package.barcode == '101')
                      .order_by(PackageItem.id))
-            assert [i.package.barcode for i in items] == \
-                   ['101', '101']
+            assert [i.package.barcode for i in items] == ['101', '101']
 
         with self.assertQueryCount(1):
             items = (PackageItem
@@ -935,32 +894,29 @@ class TestSelectRelatedForeignKeyToNonPrimaryKey(ModelTestCase):
 
 
 class BaseTestPrefetch(ModelTestCase):
-    requires = [
-        User,
-        Blog,
-        Comment,
-        Parent,
-        Child,
-        Orphan,
-        ChildPet,
-        OrphanPet,
-        Category,
-        Post,
-        Tag,
-        TagPostThrough,
-        TagPostThroughAlt,
-        Category,
-        UserCategory,
-        Relationship,
-        SpecialComment,
-    ]
+    requires = [User,
+                Blog,
+                Comment,
+                Parent,
+                Child,
+                Orphan,
+                ChildPet,
+                OrphanPet,
+                Category,
+                Post,
+                Tag,
+                TagPostThrough,
+                TagPostThroughAlt,
+                Category,
+                UserCategory,
+                Relationship,
+                SpecialComment]
 
     user_data = [
         ('u1', (('b1', ('b1-c1', 'b1-c2')), ('b2', ('b2-c1',)))),
         ('u2', ()),
         ('u3', (('b3', ('b3-c1', 'b3-c2')), ('b4', ()))),
-        ('u4', (('b5', ('b5-c1', 'b5-c2')), ('b6', ('b6-c1',)))),
-    ]
+        ('u4', (('b5', ('b5-c1', 'b5-c2')), ('b6', ('b6-c1',))))]
     parent_data = [
         ('p1', (
             # children
@@ -968,30 +924,23 @@ class BaseTestPrefetch(ModelTestCase):
                 ('c1', ('c1-p1', 'c1-p2')),
                 ('c2', ('c2-p1',)),
                 ('c3', ('c3-p1',)),
-                ('c4', ()),
-            ),
+                ('c4', ())),
             # orphans
             (
                 ('o1', ('o1-p1', 'o1-p2')),
                 ('o2', ('o2-p1',)),
                 ('o3', ('o3-p1',)),
-                ('o4', ()),
-            ),
-        )),
+                ('o4', ())))),
         ('p2', ((), ())),
         ('p3', (
             # children
             (
                 ('c6', ()),
-                ('c7', ('c7-p1',)),
-            ),
+                ('c7', ('c7-p1',))),
             # orphans
             (
                 ('o6', ('o6-p1', 'o6-p2')),
-                ('o7', ('o7-p1',)),
-            ),
-        )),
-    ]
+                ('o7', ('o7-p1',)))))]
 
     category_tree = [
         ['root', ['p1', 'p2']],
@@ -1000,8 +949,7 @@ class BaseTestPrefetch(ModelTestCase):
         ['p1-1', []],
         ['p1-2', []],
         ['p2-1', []],
-        ['p2-2', []],
-    ]
+        ['p2-2', []]]
 
     def setUp(self):
         super(BaseTestPrefetch, self).setUp()
@@ -1056,8 +1004,7 @@ class TestPrefetch(BaseTestPrefetch):
             assert results == [
                 'u1', 'b1', 'b1-c1', 'b1-c2',
                 'u2',
-                'u4', 'b5', 'b5-c1', 'b5-c2', 'b6', 'b6-c1',
-            ]
+                'u4', 'b5', 'b5-c1', 'b5-c2', 'b6', 'b6-c1']
 
         with self.assertQueryCount(0):
             results = []
@@ -1066,9 +1013,7 @@ class TestPrefetch(BaseTestPrefetch):
                     results.append(blog.user.username)
                     for comment in blog.comments_prefetch:
                         results.append(comment.blog.title)
-            assert results == [
-                'u1', 'b1', 'b1', 'u4', 'b5', 'b5', 'u4', 'b6',
-            ]
+            assert results == ['u1', 'b1', 'b1', 'u4', 'b5', 'b5', 'u4', 'b6']
 
     def test_prefetch_reverse(self):
         sq = User.select()
@@ -1081,12 +1026,11 @@ class TestPrefetch(BaseTestPrefetch):
                 results.append(blog.title)
                 results.append(blog.user.username)
 
-        assert results == [
-            'b1', 'u1',
-            'b3', 'u3',
-            'b4', 'u3',
-            'b5', 'u4',
-            'b6', 'u4']
+        assert results == ['b1', 'u1',
+                           'b3', 'u3',
+                           'b4', 'u3',
+                           'b5', 'u4',
+                           'b6', 'u4']
 
     def test_prefetch_up_and_down(self):
         blogs = Blog.select(Blog, User).join(User).order_by(Blog.title)
@@ -1097,8 +1041,7 @@ class TestPrefetch(BaseTestPrefetch):
             results = []
             for blog in query:
                 results.append((
-                    blog.user.username,
-                    blog.title,
+                    blog.user.username, blog.title,
                     [comment.comment for comment in blog.comments_prefetch]))
 
             assert results == [
@@ -1107,8 +1050,7 @@ class TestPrefetch(BaseTestPrefetch):
                 ('u3', 'b3', ['b3-c2', 'b3-c1']),
                 ('u3', 'b4', []),
                 ('u4', 'b5', ['b5-c2', 'b5-c1']),
-                ('u4', 'b6', ['b6-c1']),
-            ]
+                ('u4', 'b6', ['b6-c1'])]
 
     def test_prefetch_multi_depth(self):
         sq = Parent.select()
@@ -1138,34 +1080,27 @@ class TestPrefetch(BaseTestPrefetch):
                 'o1', 'o1-p1', 'o1-p2', 'o2', 'o2-p1', 'o3', 'o3-p1', 'o4',
                 'p2',
                 'p3', 'c6', 'c7', 'c7-p1', 'o6', 'o6-p1', 'o6-p2', 'o7',
-                'o7-p1',
-            ]
+                'o7-p1']
 
     def test_prefetch_no_aggregate(self):
         with self.assertQueryCount(1):
-            query = (User
-                     .select(User, Blog)
+            query = (User.select(User, Blog)
                      .join(Blog, JOIN.LEFT_OUTER)
                      .order_by(User.username, Blog.title))
             results = []
             for user in query:
-                results.append((
-                    user.username,
-                    user.blog.title))
+                results.append((user.username, user.blog.title))
 
-            assert results == [
-                ('u1', 'b1'),
-                ('u1', 'b2'),
-                ('u2', None),
-                ('u3', 'b3'),
-                ('u3', 'b4'),
-                ('u4', 'b5'),
-                ('u4', 'b6'),
-            ]
+            assert results == [('u1', 'b1'),
+                               ('u1', 'b2'),
+                               ('u2', None),
+                               ('u3', 'b3'),
+                               ('u3', 'b4'),
+                               ('u4', 'b5'),
+                               ('u4', 'b6')]
 
     def test_prefetch_group_by(self):
-        users = (User
-                 .select(User, fn.Max(fn.Length(Blog.content)).alias(
+        users = (User.select(User, fn.Max(fn.Length(Blog.content)).alias(
             'max_content_len'))
                  .join(Blog, JOIN_LEFT_OUTER)
                  .group_by(User)
@@ -1201,8 +1136,7 @@ class TestPrefetch(BaseTestPrefetch):
                 b = Blog.create(user=user,
                                 title='{0!s}-b{1!s}'.format(user.username, i))
                 SpecialComment.create(
-                    user=user,
-                    blog=b,
+                    user=user, blog=b,
                     name='{0!s}-c{1!s}'.format(user.username, i))
 
         u3 = User.create(username='u3')
@@ -1221,8 +1155,7 @@ class TestPrefetch(BaseTestPrefetch):
             results = []
             for user in user_pf:
                 results.append((
-                    user.username,
-                    [b.title for b in user.blog_set_prefetch],
+                    user.username, [b.title for b in user.blog_set_prefetch],
                     [c.name for c in user.special_comments_prefetch]))
 
         assert results == [
@@ -1230,16 +1163,13 @@ class TestPrefetch(BaseTestPrefetch):
             ('u2', ['u2-b1', 'u2-b2'], ['u2-c1', 'u2-c2']),
             ('u3', [], ['u3-c1']),
             ('u4', ['u4-b1'], []),
-            ('u5', [], []),
-        ]
+            ('u5', [], [])]
 
 
 class TestPrefetchMultipleFKs(ModelTestCase):
-    requires = [
-        User,
-        Blog,
-        Relationship,
-    ]
+    requires = [User,
+                Blog,
+                Relationship]
 
     def create_users(self):
         names = ['charlie', 'huey', 'zaizee']
@@ -1299,11 +1229,10 @@ class TestPrefetchMultipleFKs(ModelTestCase):
             results = [row for row in query]
             assert len(results) == 4
 
-            expected = (
-                ('charlie', 'huey'),
-                ('charlie', 'zaizee'),
-                ('huey', 'charlie'),
-                ('zaizee', 'charlie'))
+            expected = (('charlie', 'huey'),
+                        ('charlie', 'zaizee'),
+                        ('huey', 'charlie'),
+                        ('zaizee', 'charlie'))
             for (from_user, to_user), relationship in zip(expected, results):
                 assert relationship.from_user.username == from_user
                 assert relationship.to_user.username == to_user
@@ -1311,18 +1240,16 @@ class TestPrefetchMultipleFKs(ModelTestCase):
 
 class TestPrefetchThroughM2M(ModelTestCase):
     requires = [User, Note, Flag, NoteFlag]
-    test_data = [
-        ('charlie', [
-            ('rewrite peewee', ['todo']),
-            ('rice desktop', ['done']),
-            ('test peewee', ['todo', 'urgent']),
-            ('write window-manager', [])]),
-        ('huey', [
-            ('bite mickey', []),
-            ('scratch furniture', ['todo', 'urgent']),
-            ('vomit on carpet', ['done'])]),
-        ('zaizee', []),
-    ]
+    test_data = [('charlie', [
+        ('rewrite peewee', ['todo']),
+        ('rice desktop', ['done']),
+        ('test peewee', ['todo', 'urgent']),
+        ('write window-manager', [])]),
+                 ('huey', [
+                     ('bite mickey', []),
+                     ('scratch furniture', ['todo', 'urgent']),
+                     ('vomit on carpet', ['done'])]),
+                 ('zaizee', [])]
 
     def setUp(self):
         super(TestPrefetchThroughM2M, self).setUp()
@@ -1365,8 +1292,7 @@ class TestPrefetchThroughM2M(ModelTestCase):
 
     def test_aggregate_through_m2m(self):
         with self.assertQueryCount(1):
-            query = (User
-                     .select(User, Note, NoteFlag, Flag)
+            query = (User.select(User, Note, NoteFlag, Flag)
                      .join(Note, JOIN.LEFT_OUTER)
                      .join(NoteFlag, JOIN.LEFT_OUTER)
                      .join(Flag, JOIN.LEFT_OUTER)
@@ -1390,8 +1316,7 @@ class TestPrefetchThroughM2M(ModelTestCase):
 class TestAggregateRows(BaseTestPrefetch):
     def test_aggregate_users(self):
         with self.assertQueryCount(1):
-            query = (User
-                     .select(User, Blog, Comment)
+            query = (User.select(User, Blog, Comment)
                      .join(Blog, JOIN.LEFT_OUTER)
                      .join(Comment, JOIN.LEFT_OUTER)
                      .order_by(User.username, Blog.title, Comment.id)
@@ -1401,9 +1326,8 @@ class TestAggregateRows(BaseTestPrefetch):
             for user in query:
                 results.append((
                     user.username,
-                    [(blog.title,
-                      [comment.comment for comment in blog.comments])
-                     for blog in user.blog_set]))
+                    [(blog.title, [comment.comment for comment in
+                                   blog.comments]) for blog in user.blog_set]))
 
         assert results == [
             ('u1', [
@@ -1415,13 +1339,11 @@ class TestAggregateRows(BaseTestPrefetch):
                 ('b4', [])]),
             ('u4', [
                 ('b5', ['b5-c1', 'b5-c2']),
-                ('b6', ['b6-c1'])]),
-        ]
+                ('b6', ['b6-c1'])])]
 
     def test_aggregate_blogs(self):
         with self.assertQueryCount(1):
-            query = (Blog
-                     .select(Blog, User, Comment)
+            query = (Blog.select(Blog, User, Comment)
                      .join(User)
                      .switch(Blog)
                      .join(Comment, JOIN.LEFT_OUTER)
@@ -1431,75 +1353,60 @@ class TestAggregateRows(BaseTestPrefetch):
             results = []
             for blog in query:
                 results.append((
-                    blog.user.username,
-                    blog.title,
+                    blog.user.username, blog.title,
                     [comment.comment for comment in blog.comments]))
 
-        assert results == [
-            ('u1', 'b1', ['b1-c1', 'b1-c2']),
-            ('u1', 'b2', ['b2-c1']),
-            ('u3', 'b3', ['b3-c1', 'b3-c2']),
-            ('u3', 'b4', []),
-            ('u4', 'b5', ['b5-c1', 'b5-c2']),
-            ('u4', 'b6', ['b6-c1']),
-        ]
+        assert results == [('u1', 'b1', ['b1-c1', 'b1-c2']),
+                           ('u1', 'b2', ['b2-c1']),
+                           ('u3', 'b3', ['b3-c1', 'b3-c2']),
+                           ('u3', 'b4', []),
+                           ('u4', 'b5', ['b5-c1', 'b5-c2']),
+                           ('u4', 'b6', ['b6-c1'])]
 
     def test_aggregate_on_expression_join(self):
         with self.assertQueryCount(1):
             join_expr = (User.id == Blog.user)
-            query = (User
-                     .select(User, Blog)
+            query = (User.select(User, Blog)
                      .join(Blog, JOIN.LEFT_OUTER, on=join_expr)
                      .order_by(User.username, Blog.title)
                      .aggregate_rows())
             results = []
             for user in query:
                 results.append((
-                    user.username,
-                    [blog.title for blog in user.blog_set]))
+                    user.username, [blog.title for blog in user.blog_set]))
 
-        assert results == [
-            ('u1', ['b1', 'b2']),
-            ('u2', []),
-            ('u3', ['b3', 'b4']),
-            ('u4', ['b5', 'b6']),
-        ]
+        assert results == [('u1', ['b1', 'b2']),
+                           ('u2', []),
+                           ('u3', ['b3', 'b4']),
+                           ('u4', ['b5', 'b6'])]
 
     def test_aggregate_with_join_model_aliases(self):
-        expected = [
-            ('u1', ['b1', 'b2']),
-            ('u2', []),
-            ('u3', ['b3', 'b4']),
-            ('u4', ['b5', 'b6']),
-        ]
+        expected = [('u1', ['b1', 'b2']),
+                    ('u2', []),
+                    ('u3', ['b3', 'b4']),
+                    ('u4', ['b5', 'b6'])]
 
         with self.assertQueryCount(1):
-            query = (User
-                     .select(User, Blog)
-                     .join(
-                Blog,
-                JOIN.LEFT_OUTER,
-                on=(User.id == Blog.user).alias('blogz'))
+            query = (User.select(User, Blog)
+                     .join(Blog,
+                           JOIN.LEFT_OUTER,
+                           on=(User.id == Blog.user).alias('blogz'))
                      .order_by(User.id, Blog.title)
                      .aggregate_rows())
-            results = [
-                (user.username, [blog.title for blog in user.blogz])
-                for user in query]
+            results = [(user.username, [blog.title for blog in user.blogz])
+                       for user in query]
             assert results == expected
 
         BlogAlias = Blog.alias()
         with self.assertQueryCount(1):
-            query = (User
-                     .select(User, BlogAlias)
-                     .join(
-                BlogAlias,
-                JOIN.LEFT_OUTER,
-                on=(User.id == BlogAlias.user).alias('blogz'))
+            query = (User.select(User, BlogAlias)
+                     .join(BlogAlias,
+                           JOIN.LEFT_OUTER,
+                           on=(User.id == BlogAlias.user).alias('blogz'))
                      .order_by(User.id, BlogAlias.title)
                      .aggregate_rows())
-            results = [
-                (user.username, [blog.title for blog in user.blogz])
-                for user in query]
+            results = [(user.username, [blog.title for blog in user.blogz])
+                       for user in query]
             assert results == expected
 
     def test_aggregate_unselected_join_backref(self):
@@ -1517,8 +1424,7 @@ class TestAggregateRows(BaseTestPrefetch):
             # The join on UserCategory is a backref join (since the FK is on
             # UserCategory). Additionally, UserCategory/Category are not
             # selected and are only used for filtering the result set.
-            query = (User
-                     .select(User, Blog)
+            query = (User.select(User, Blog)
                      .join(Blog, JOIN.LEFT_OUTER)
                      .switch(User)
                      .join(UserCategory)
@@ -1530,13 +1436,10 @@ class TestAggregateRows(BaseTestPrefetch):
             results = []
             for user in query:
                 results.append((
-                    user.username,
-                    [blog.title for blog in user.blog_set]))
+                    user.username, [blog.title for blog in user.blog_set]))
 
-        assert results == [
-            ('u2', []),
-            ('u4', ['b5', 'b6']),
-        ]
+        assert results == [('u2', []),
+                           ('u4', ['b5', 'b6'])]
 
     def test_aggregate_manytomany(self):
         p1 = Post.create(title='p1')
@@ -1568,12 +1471,10 @@ class TestAggregateRows(BaseTestPrefetch):
                     post_data.append(tpt.tag.tag)
                 results.append(post_data)
 
-        assert results == [
-            ['p1', 't1', 't2'],
-            ['p2', 't2', 't3'],
-            ['p3'],
-            ['p4', 't1', 't2', 't3'],
-        ]
+        assert results == [['p1', 't1', 't2'],
+                           ['p2', 't2', 't3'],
+                           ['p3'],
+                           ['p4', 't1', 't2', 't3']]
 
     def test_aggregate_parent_child(self):
         with self.assertQueryCount(1):
@@ -1584,12 +1485,11 @@ class TestAggregateRows(BaseTestPrefetch):
                      .switch(Parent)
                      .join(Orphan, JOIN.LEFT_OUTER)
                      .join(OrphanPet, JOIN.LEFT_OUTER)
-                     .order_by(
-                Parent.data,
-                Child.data,
-                ChildPet.id,
-                Orphan.data,
-                OrphanPet.id)
+                     .order_by(Parent.data,
+                               Child.data,
+                               ChildPet.id,
+                               Orphan.data,
+                               OrphanPet.id)
                      .aggregate_rows())
 
             results = []
@@ -1599,8 +1499,7 @@ class TestAggregateRows(BaseTestPrefetch):
                     [(child.data, [pet.data for pet in child.childpet_set])
                      for child in parent.child_set],
                     [(orphan.data, [pet.data for pet in orphan.orphanpet_set])
-                     for orphan in parent.orphan_set]
-                ))
+                     for orphan in parent.orphan_set]))
 
         # Without the `.aggregate_rows()` call, this would be 289!!
         assert results == [
@@ -1612,20 +1511,17 @@ class TestAggregateRows(BaseTestPrefetch):
              [('o1', ['o1-p1', 'o1-p2']),
               ('o2', ['o2-p1']),
               ('o3', ['o3-p1']),
-              ('o4', [])],
-             ),
+              ('o4', [])]),
             ('p2', [], []),
             ('p3',
              [('c6', []),
               ('c7', ['c7-p1'])],
              [('o6', ['o6-p1', 'o6-p2']),
-              ('o7', ['o7-p1'])],)
-        ]
+              ('o7', ['o7-p1'])],)]
 
     def test_aggregate_with_unselected_joins(self):
         with self.assertQueryCount(1):
-            query = (Child
-                     .select(Child, ChildPet, Parent)
+            query = (Child.select(Child, ChildPet, Parent)
                      .join(ChildPet, JOIN.LEFT_OUTER)
                      .switch(Child)
                      .join(Parent)
@@ -1637,18 +1533,13 @@ class TestAggregateRows(BaseTestPrefetch):
             results = []
             for child in query:
                 results.append((
-                    child.data,
-                    child.parent.data,
+                    child.data, child.parent.data,
                     [child_pet.data for child_pet in child.childpet_set]))
 
-        assert results == [
-            ('c6', 'p3', []),
-            ('c7', 'p3', ['c7-p1']),
-        ]
+        assert results == [('c6', 'p3', []), ('c7', 'p3', ['c7-p1'])]
 
         with self.assertQueryCount(1):
-            query = (Parent
-                     .select(Parent, Child, ChildPet)
+            query = (Parent.select(Parent, Child, ChildPet)
                      .join(Child, JOIN.LEFT_OUTER)
                      .join(ChildPet, JOIN.LEFT_OUTER)
                      .switch(Parent)
@@ -1664,10 +1555,7 @@ class TestAggregateRows(BaseTestPrefetch):
                     [(child.data, [pet.data for pet in child.childpet_set])
                      for child in parent.child_set]))
 
-        assert results == [('p3', [
-            ('c6', []),
-            ('c7', ['c7-p1']),
-        ])]
+        assert results == [('p3', [('c6', []), ('c7', ['c7-p1'])])]
 
     def test_aggregate_rows_ordering(self):
         # Refs github #519.
@@ -1685,12 +1573,10 @@ class TestAggregateRows(BaseTestPrefetch):
                     [blog.title for blog in user.blog_set]))
 
         if sys.version_info[:2] > (2, 6):
-            assert accum == [
-                ('u4', ['b6', 'b5']),
-                ('u3', ['b4', 'b3']),
-                ('u2', []),
-                ('u1', ['b2', 'b1']),
-            ]
+            assert accum == [('u4', ['b6', 'b5']),
+                             ('u3', ['b4', 'b3']),
+                             ('u2', []),
+                             ('u1', ['b2', 'b1'])]
 
     def test_aggregate_rows_self_join(self):
         self._build_category_tree()
@@ -1698,12 +1584,10 @@ class TestAggregateRows(BaseTestPrefetch):
 
         # Same query, but this time use an `alias` on the join expr.
         with self.assertQueryCount(1):
-            query = (Category
-                     .select(Category, Child)
-                     .join(
-                Child,
-                JOIN.LEFT_OUTER,
-                on=(Category.id == Child.parent).alias('childrenx'))
+            query = (Category.select(Category, Child)
+                     .join(Child,
+                           JOIN.LEFT_OUTER,
+                           on=(Category.id == Child.parent).alias('childrenx'))
                      .order_by(Category.id, Child.id)
                      .aggregate_rows())
             names_and_children = [
@@ -1723,17 +1607,13 @@ class TestAggregateRows(BaseTestPrefetch):
         UserAlias = User.alias()
 
         with self.assertQueryCount(1):
-            query = (User
-                     .select(User, Relationship, UserAlias)
-                     .join(
-                Relationship,
-                JOIN.LEFT_OUTER,
-                on=Relationship.from_user)
-                     .join(
-                UserAlias,
-                on=(
-                    Relationship.to_user == UserAlias.id
-                ).alias('to_user'))
+            query = (User.select(User, Relationship, UserAlias)
+                     .join(Relationship,
+                           JOIN.LEFT_OUTER,
+                           on=Relationship.from_user)
+                     .join(UserAlias,
+                           on=(Relationship.to_user == UserAlias.id
+                               ).alias('to_user'))
                      .order_by(User.username, Relationship.id)
                      .where(User.username == 'charlie')
                      .aggregate_rows())
@@ -1755,23 +1635,19 @@ class TestAggregateRows(BaseTestPrefetch):
         to_join = (Relationship.to_user == ToUser.id)
 
         with self.assertQueryCount(1):
-            query = (Relationship
-                     .select(Relationship, FromUser, ToUser)
+            query = (Relationship.select(Relationship, FromUser, ToUser)
                      .join(FromUser, on=from_join.alias('from_user'))
                      .switch(Relationship)
                      .join(ToUser, on=to_join.alias('to_user'))
                      .order_by(Relationship.id)
                      .aggregate_rows())
-            results = [
-                (relationship.from_user.username,
-                 relationship.to_user.username)
-                for relationship in query]
-            assert results == [
-                ('charlie', 'huey'),
-                ('charlie', 'zaizee'),
-                ('huey', 'charlie'),
-                ('zaizee', 'charlie'),
-            ]
+            results = [(relationship.from_user.username,
+                        relationship.to_user.username)
+                       for relationship in query]
+            assert results == [('charlie', 'huey'),
+                               ('charlie', 'zaizee'),
+                               ('huey', 'charlie'),
+                               ('zaizee', 'charlie')]
 
     def test_multiple_fks_multi_depth(self):
         names = ['charlie', 'huey', 'zaizee']
@@ -1803,15 +1679,13 @@ class TestAggregateRows(BaseTestPrefetch):
         to_c_join = (ToUserCategory.category == ToCategory.id)
 
         with self.assertQueryCount(1):
-            query = (Relationship
-                     .select(
-                Relationship,
-                FromUser,
-                ToUser,
-                FromUserCategory,
-                ToUserCategory,
-                FromCategory,
-                ToCategory)
+            query = (Relationship.select(Relationship,
+                                         FromUser,
+                                         ToUser,
+                                         FromUserCategory,
+                                         ToUserCategory,
+                                         FromCategory,
+                                         ToCategory)
                      .join(FromUser, on=from_join.alias('from_user'))
                      .join(FromUserCategory, on=from_uc_join.alias('fuc'))
                      .join(FromCategory, on=from_c_join.alias('category'))
@@ -1826,28 +1700,24 @@ class TestAggregateRows(BaseTestPrefetch):
             for obj in query:
                 from_user = obj.from_user
                 to_user = obj.to_user
-                results.append((
-                    from_user.username,
-                    from_user.fuc[0].category.name,
-                    to_user.username,
-                    to_user.tuc[0].category.name))
+                results.append((from_user.username,
+                                from_user.fuc[0].category.name,
+                                to_user.username,
+                                to_user.tuc[0].category.name))
 
-            assert results == [
-                ('charlie', 'human', 'huey', 'kitty'),
-                ('charlie', 'human', 'zaizee', 'kitty'),
-                ('huey', 'kitty', 'charlie', 'human'),
-                ('zaizee', 'kitty', 'charlie', 'human'),
-            ]
+            assert results == [('charlie', 'human', 'huey', 'kitty'),
+                               ('charlie', 'human', 'zaizee', 'kitty'),
+                               ('huey', 'kitty', 'charlie', 'human'),
+                               ('zaizee', 'kitty', 'charlie', 'human')]
 
 
 class TestAggregateRowsRegression(ModelTestCase):
-    requires = [
-        User,
-        Blog,
-        Comment,
-        Category,
-        CommentCategory,
-        BlogData]
+    requires = [User,
+                Blog,
+                Comment,
+                Category,
+                CommentCategory,
+                BlogData]
 
     def setUp(self):
         super(TestAggregateRowsRegression, self).setUp()
@@ -1867,13 +1737,11 @@ class TestAggregateRowsRegression(ModelTestCase):
         CommentCategory.create(category=cat2, comment=c2, sort_order=2)
 
     def test_aggregate_rows_regression(self):
-        comments = (Comment
-                    .select(
-            Comment,
-            CommentCategory,
-            Category,
-            Blog,
-            BlogData)
+        comments = (Comment.select(Comment,
+                                   CommentCategory,
+                                   Category,
+                                   Blog,
+                                   BlogData)
                     .join(CommentCategory, JOIN.LEFT_OUTER)
                     .join(Category, JOIN.LEFT_OUTER)
                     .switch(Comment)
@@ -1890,15 +1758,13 @@ class TestAggregateRowsRegression(ModelTestCase):
         for i in range(2):
             Blog.create(title='u2-{0!s}'.format(i), user=user)
 
-        users = (User
-                 .select()
+        users = (User.select()
                  .order_by(User.id.desc())
                  .paginate(1, 5)
                  .alias('users'))
 
         with self.assertQueryCount(1):
-            query = (User
-                     .select(User, Blog)
+            query = (User.select(User, Blog)
                      .join(Blog)
                      .join(users, on=(User.id == users.c.id))
                      .order_by(User.username, Blog.title)
@@ -1906,24 +1772,19 @@ class TestAggregateRowsRegression(ModelTestCase):
 
             results = []
             for user in query:
-                results.append((
-                    user.username,
-                    [blog.title for blog in user.blog_set]))
+                results.append(
+                    (user.username, [blog.title for blog in user.blog_set]))
 
-        assert results == [
-            ('u1', ['b1']),
-            ('u2', ['u2-0', 'u2-1']),
-        ]
+        assert results == [('u1', ['b1']),
+                           ('u2', ['u2-0', 'u2-1'])]
 
 
 class TestPrefetchNonPKFK(ModelTestCase):
     requires = [Package, PackageItem]
-    data = {
-        '101': ['a', 'b'],
-        '102': ['c'],
-        '103': [],
-        '104': ['a', 'b', 'c', 'd', 'e'],
-    }
+    data = {'101': ['a', 'b'],
+            '102': ['c'],
+            '103': [],
+            '104': ['a', 'b', 'c', 'd', 'e'], }
 
     def setUp(self):
         super(TestPrefetchNonPKFK, self).setUp()
@@ -1940,21 +1801,17 @@ class TestPrefetchNonPKFK(ModelTestCase):
         for package, (barcode, titles) in zip(query,
                                               sorted(self.data.items())):
             assert package.barcode == barcode
-            assert [item.title for item in package.items_prefetch] == \
-                   titles
+            assert [item.title for item in package.items_prefetch] == titles
 
-        packages = (Package
-                    .select()
+        packages = (Package.select()
                     .where(Package.barcode << ['101', '104'])
                     .order_by(Package.id))
         items = items.where(PackageItem.title << ['a', 'c', 'e'])
         query = prefetch(packages, items)
         accum = {}
         for package in query:
-            accum[package.barcode] = [
-                item.title for item in package.items_prefetch]
+            accum[package.barcode] = [item.title for item in
+                                      package.items_prefetch]
 
-        assert accum == {
-            '101': ['a'],
-            '104': ['a', 'c', 'e'],
-        }
+        assert accum == {'101': ['a'],
+                         '104': ['a', 'c', 'e'], }

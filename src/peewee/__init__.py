@@ -2,18 +2,15 @@
 
 import logging
 from peewee.core import (BareField, BigIntegerField, BlobField, BooleanField,
-                         CharField, Check, Clause, CompositeKey, DQ, DataError,
-                         DatabaseError, DateField, DateTimeField, DecimalField,
+                         CharField, Check, Clause, CompositeKey, DQ,
+                         DateField, DateTimeField, DecimalField,
                          DeferredRelation, DoubleField, Field,
                          FixedCharField, FloatField, ForeignKeyField,
-                         ImproperlyConfigured, IntegerField, IntegrityError,
-                         InterfaceError, InternalError, JOIN, JOIN_FULL,
-                         JOIN_INNER, JOIN_LEFT_OUTER, Model,
-                         NotSupportedError, OperationalError, Param,
-                         PrimaryKeyField, ProgrammingError,
+                         IntegerField, Model, Param, PrimaryKeyField,
                          Proxy, R, SQL, SmallIntegerField, SqliteDatabase,
                          TextField, TimeField, TimestampField, UUIDField,
                          Using, Window, fn, prefetch)
+from peewee.utils import JOIN, JOIN_INNER, JOIN_LEFT_OUTER, JOIN_FULL
 from peewee.exceptions import (DoesNotExist, ImproperlyConfigured,
                                DatabaseError, DataError, IntegrityError,
                                InterfaceError, InternalError,

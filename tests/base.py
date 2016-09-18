@@ -287,5 +287,5 @@ class QueryLogger(object):
     def __exit__(self, exc_type, exc_val, exc_tb):
         all_queries = self.test_case.queries()
         self._final_query_count = len(all_queries)
-        self.queries = all_queries[
-                       self._initial_query_count: self._final_query_count]
+        self.queries = (
+            all_queries[self._initial_query_count:self._final_query_count])

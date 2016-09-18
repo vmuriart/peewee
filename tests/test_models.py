@@ -76,10 +76,10 @@ class TestQueryingModels(ModelTestCase):
             User.username)
         assert [u.username for u in users] == ['u0', 'u5']
 
-        blogs = Blog.select().join(User).where(
+        blogs = (Blog.select().join(User).where(
             (User.username << ['u0', 'u3']) &
-            (Blog.content == '4')
-        ).order_by(Blog.title)
+            (Blog.content == '4'))
+                 .order_by(Blog.title))
         assert [b.title for b in blogs] == ['b-0-4', 'b-3-4']
 
         users = User.select().paginate(2, 3)
@@ -100,24 +100,25 @@ class TestQueryingModels(ModelTestCase):
         # delete user 2's 2nd blog
         Blog.delete().where(Blog.title == 'b-2-2').execute()
 
-        subquery = Blog.select(fn.Count(Blog.pk)).where(
-            Blog.user == User.id).group_by(Blog.user)
-        users = User.select(User, subquery.alias('ct')).order_by(
-            R('ct'), User.id)
+        subquery = (Blog.select(fn.Count(Blog.pk))
+                    .where(Blog.user == User.id)
+                    .group_by(Blog.user))
+        users = (User.select(User, subquery.alias('ct'))
+                 .order_by(R('ct'), User.id))
 
         assert [(x.username, x.ct) for x in users] == [('u2', 2),
                                                        ('u0', 3),
                                                        ('u1', 3),
                                                        ('u3', 3),
-                                                       ('u4', 3), ]
+                                                       ('u4', 3)]
 
     def test_select_with_bind_to(self):
         self.create_users_blogs(1, 1)
-        blog = Blog.select(
+        blog = (Blog.select(
             Blog, User,
             (User.username == 'u0').alias('is_u0').bind_to(User),
-            (User.username == 'u1').alias('is_u1').bind_to(User)
-        ).join(User).get()
+            (User.username == 'u1').alias('is_u1').bind_to(User))
+                .join(User).get())
 
         assert blog.user.is_u0
         assert not blog.user.is_u1
@@ -290,9 +291,7 @@ class TestQueryingModels(ModelTestCase):
 
         query = ('select id, username, %s as secret '
                  'from users where username = %s')
-        rq = User.raw(
-            query % (interpolation, interpolation),
-            'sh', 'u2')
+        rq = User.raw(query % (interpolation, interpolation), 'sh', 'u2')
         assert [u.secret for u in rq] == ['sh']
         assert [u.username for u in rq] == ['u2']
 
@@ -300,9 +299,7 @@ class TestQueryingModels(ModelTestCase):
         assert rq.scalar() == 3
 
         rq = User.raw('select username from users').tuples()
-        assert [r for r in rq] == [
-            ('u1',), ('u2',), ('u3',),
-        ]
+        assert [r for r in rq] == [('u1',), ('u2',), ('u3',)]
 
     def test_limits_offsets(self):
         for i in range(10):
@@ -310,12 +307,14 @@ class TestQueryingModels(ModelTestCase):
         sq = User.select().order_by(User.id)
 
         offset_no_lim = sq.offset(3)
-        assert [u.username for u in offset_no_lim] == \
-               ['u{0:d}'.format(i) for i in range(3, 10)]
+        assert (
+            [u.username for u in offset_no_lim] == ['u{0:d}'.format(i) for i in
+                                                    range(3, 10)])
 
         offset_with_lim = sq.offset(5).limit(3)
-        assert [u.username for u in offset_with_lim] == \
-               ['u{0:d}'.format(i) for i in range(5, 8)]
+        assert (
+            [u.username for u in offset_with_lim] == ['u{0:d}'.format(i) for i
+                                                      in range(5, 8)])
 
     def test_raw_fn(self):
         self.create_users_blogs(3, 2)  # 3 users, 2 blogs each.
@@ -363,9 +362,9 @@ class TestInsertEmptyModel(ModelTestCase):
 
         NoPKModel(data='2').save()
         NoPKModel(data='3').save()
-        assert [obj.data for obj in
-                NoPKModel.select().order_by(NoPKModel.data)] == \
-               ['1-e', '2', '3']
+        assert ([obj.data for obj in
+                 NoPKModel.select().order_by(NoPKModel.data)] ==
+                ['1-e', '2', '3'])
 
 
 class TestModelAPIs(ModelTestCase):
@@ -384,10 +383,9 @@ class TestModelAPIs(ModelTestCase):
         b12 = Blog.create(user=u1, title='b12')
         b2 = Blog.create(user=u2, title='b2')
 
-        assert [b.title for b in u1.blog_set.order_by(Blog.title)] == \
-               ['b11', 'b12']
-        assert [b.title for b in u2.blog_set.order_by(Blog.title)] == \
-               ['b2']
+        assert ([b.title for b in u1.blog_set.order_by(Blog.title)] ==
+                ['b11', 'b12'])
+        assert [b.title for b in u2.blog_set.order_by(Blog.title)] == ['b2']
 
     def test_related_name_collision(self):
         class Foo(TestModel):
@@ -503,8 +501,8 @@ class TestModelAPIs(ModelTestCase):
 
         with self.assertQueryCount(1):
             query = Category.select().order_by(Category.id)
-            assert [cat.parent_id for cat in query] == \
-                   [None, None, p1.id, p2.id]
+            assert (
+                [cat.parent_id for cat in query] == [None, None, p1.id, p2.id])
 
     def test_fk_object_id(self):
         u = User.create(username='u')
@@ -571,16 +569,14 @@ class TestModelAPIs(ModelTestCase):
         with self.assertQueryCount(1):
             Grandparent = Category.alias()
             Parent = Category.alias()
-            sq = (Category
-                  .select(Category, Parent, Grandparent)
+            sq = (Category.select(Category, Parent, Grandparent)
                   .join(Parent, on=(Category.parent == Parent.id))
                   .join(Grandparent, on=(Parent.parent == Grandparent.id))
                   .where(Grandparent.name == 'g1')
                   .order_by(Category.name))
 
             assert [(c.name, c.parent.name, c.parent.parent.name) for c in
-                    sq] == \
-                   [('c1', 'p1', 'g1'), ('c11', 'p1', 'g1')]
+                    sq] == [('c1', 'p1', 'g1'), ('c11', 'p1', 'g1')]
 
     def test_creation(self):
         User.create_users(10)
@@ -607,8 +603,7 @@ class TestModelAPIs(ModelTestCase):
             blog.save()
 
         with self.assertQueryCount(1):
-            blog_db = (Blog
-                       .select(Blog, User)
+            blog_db = (Blog.select(Blog, User)
                        .join(User)
                        .where(Blog.pk == blog.pk)
                        .get())
@@ -641,16 +636,14 @@ class TestModelAPIs(ModelTestCase):
         u_db = User.get()
         assert not u_db.is_dirty()
 
-        b_with_u = (Blog
-                    .select(Blog, User)
+        b_with_u = (Blog.select(Blog, User)
                     .join(User)
                     .where(Blog.title == 'b2')
                     .get())
         assert not b_with_u.is_dirty()
         assert not b_with_u.user.is_dirty()
 
-        u_with_blogs = (User
-                        .select(User, Blog)
+        u_with_blogs = (User.select(User, Blog)
                         .join(Blog)
                         .order_by(Blog.title)
                         .aggregate_rows())[0]
@@ -658,8 +651,7 @@ class TestModelAPIs(ModelTestCase):
         for blog in u_with_blogs.blog_set:
             assert not blog.is_dirty()
 
-        b_with_users = (Blog
-                        .select(Blog, User)
+        b_with_users = (Blog.select(Blog, User)
                         .join(User)
                         .order_by(Blog.title)
                         .aggregate_rows())
@@ -710,8 +702,8 @@ class TestModelAPIs(ModelTestCase):
                 b = Blog.create(title='b1', user=u)
 
             # The default value for the blog content will be saved as well.
-            assert [params for _, params in query_logger.queries] == \
-                   [['u1'], [u.id, 'b1', '']]
+            assert ([params for _, params in query_logger.queries] == [
+                ['u1'], [u.id, 'b1', '']])
 
             with self.assertQueryCount(0):
                 assert u.save() is False
@@ -785,8 +777,7 @@ class TestModelAPIs(ModelTestCase):
             assert False
 
         assert exc.__module__ == 'tests.models'
-        assert str(type(exc)) == \
-               "<class 'tests.models.UserDoesNotExist'>"
+        assert str(type(exc)) == "<class 'tests.models.UserDoesNotExist'>"
         if sys.version_info[0] < 3:
             assert exc.message.startswith('Instance matching query')
             assert exc.message.endswith('PARAMS: [0]')
@@ -802,45 +793,40 @@ class TestModelAPIs(ModelTestCase):
         assert User.select().count() == 1
 
     def test_get_or_create_extended(self):
-        gc1, created = GCModel.get_or_create(
-            name='huey',
-            key='k1',
-            value='v1',
-            defaults={'number': 3})
+        gc1, created = GCModel.get_or_create(name='huey',
+                                             key='k1',
+                                             value='v1',
+                                             defaults={'number': 3})
         assert created
         assert gc1.name == 'huey'
         assert gc1.key == 'k1'
         assert gc1.value == 'v1'
         assert gc1.number == 3
 
-        gc1_db, created = GCModel.get_or_create(
-            name='huey',
-            defaults={'key': 'k2', 'value': 'v2'})
+        gc1_db, created = GCModel.get_or_create(name='huey',
+                                                defaults={'key': 'k2',
+                                                          'value': 'v2'})
         assert not created
         assert gc1_db.id == gc1.id
         assert gc1_db.key == 'k1'
 
         def integrity_error():
-            gc2, created = GCModel.get_or_create(
-                name='huey',
-                key='kx',
-                value='vx')
+            gc2, created = GCModel.get_or_create(name='huey',
+                                                 key='kx',
+                                                 value='vx')
 
         with pytest.raises(IntegrityError):
             integrity_error()
 
-        gc2, created = GCModel.get_or_create(
-            name__ilike='%nugget%',
-            defaults={
-                'name': 'foo-nugget',
-                'key': 'k2',
-                'value': 'v2'})
+        gc2, created = GCModel.get_or_create(name__ilike='%nugget%',
+                                             defaults={'name': 'foo-nugget',
+                                                       'key': 'k2',
+                                                       'value': 'v2'})
         assert created
         assert gc2.name == 'foo-nugget'
 
-        gc2_db, created = GCModel.get_or_create(
-            name__ilike='%nugg%',
-            defaults={'name': 'xx'})
+        gc2_db, created = GCModel.get_or_create(name__ilike='%nugg%',
+                                                defaults={'name': 'xx'})
         assert not created
         assert gc2_db.id == gc2.id
 
@@ -865,10 +851,9 @@ class TestModelAPIs(ModelTestCase):
 
         # Test with a unique model.
         with assertQC(1):
-            um, new = UniqueMultiField.create_or_get(
-                name='baby huey',
-                field_a='fielda',
-                field_b=1)
+            um, new = UniqueMultiField.create_or_get(name='baby huey',
+                                                     field_a='fielda',
+                                                     field_b=1)
 
         assert new
         assert um.name == 'baby huey'
@@ -890,18 +875,16 @@ class TestModelAPIs(ModelTestCase):
 
         # Test with a non-integer primary key model.
         with assertQC(1):
-            nm, new = NonIntModel.create_or_get(
-                pk='1337',
-                data='sweet mickey')
+            nm, new = NonIntModel.create_or_get(pk='1337',
+                                                data='sweet mickey')
 
         assert new
         assert nm.pk == '1337'
         assert nm.data == 'sweet mickey'
 
         with assertQC(2):
-            nm_get, new = NonIntModel.create_or_get(
-                pk='1337',
-                data='michael-nuggie')
+            nm_get, new = NonIntModel.create_or_get(pk='1337',
+                                                    data='michael-nuggie')
 
         assert not new
         assert nm_get.pk == nm.pk
@@ -1012,8 +995,7 @@ class TestModelAPIs(ModelTestCase):
         u2 = User.create(username='u2')
         u3 = User.create(username='u2')
         users = User.select().order_by(User.username.desc(), User.id.desc())
-        assert [u._get_pk_value() for u in users] == \
-               [u3.id, u2.id, u1.id]
+        assert [u._get_pk_value() for u in users] == [u3.id, u2.id, u1.id]
 
     def test_count_transaction(self):
         for i in range(10):
@@ -1128,11 +1110,12 @@ class TestModelAPIs(ModelTestCase):
 
         # The first five should all be "gcI", the last five will have
         # "x-gcI" for their keys.
-        assert [gc.key for gc in first_five] == \
-               ['gc0', 'gc1', 'gc2', 'gc3', 'gc4']
+        assert (
+            [gc.key for gc in first_five] == ['gc0', 'gc1', 'gc2', 'gc3',
+                                              'gc4'])
 
-        assert [gc.key for gc in last_five] == \
-               ['x-gc5', 'x-gc6', 'x-gc7', 'x-gc8', 'x-gc9']
+        assert ([gc.key for gc in last_five] ==
+                ['x-gc5', 'x-gc6', 'x-gc7', 'x-gc8', 'x-gc9'])
 
     def test_meta_get_field_index(self):
         index = Blog._meta.get_field_index(Blog.content)
@@ -1147,8 +1130,7 @@ class TestModelAPIs(ModelTestCase):
         _Model._meta.remove_field('content')
         assert 'content' not in _Model._meta.fields
         assert 'content' not in _Model._meta.sorted_field_names
-        assert [f.name for f in _Model._meta.sorted_fields] == \
-               ['id', 'title']
+        assert [f.name for f in _Model._meta.sorted_fields] == ['id', 'title']
 
     def test_meta_rel_for_model(self):
         class User(Model):
@@ -1173,18 +1155,17 @@ class TestModelAPIs(ModelTestCase):
         assert UM.rel_for_model(Tweet) is None
         assert UM.rel_for_model(Tweet, multi=True) == []
         assert UM.reverse_rel_for_model(Tweet) == Tweet.user
-        assert UM.reverse_rel_for_model(Tweet, multi=True) == \
-               [Tweet.user]
+        assert UM.reverse_rel_for_model(Tweet, multi=True) == [Tweet.user]
 
         # Multi fks.
         assert RM.rel_for_model(User) == Relationship.from_user
-        assert RM.rel_for_model(User, multi=True) == \
-               [Relationship.from_user, Relationship.to_user]
+        assert (RM.rel_for_model(User, multi=True) == [Relationship.from_user,
+                                                       Relationship.to_user])
 
-        assert UM.reverse_rel_for_model(Relationship) == \
-               Relationship.from_user
-        assert UM.reverse_rel_for_model(Relationship, multi=True) == \
-               [Relationship.from_user, Relationship.to_user]
+        assert (UM.reverse_rel_for_model(Relationship) ==
+                Relationship.from_user)
+        assert (UM.reverse_rel_for_model(Relationship, multi=True) ==
+                [Relationship.from_user, Relationship.to_user])
 
         # Self-refs work.
         assert CM.rel_for_model(Category) == Category.parent
@@ -1199,10 +1180,9 @@ class TestAggregatesWithModels(ModelTestCase):
     requires = [OrderedModel, User, Blog]
 
     def create_ordered_models(self):
-        return [
-            OrderedModel.create(
-                title=i, created=datetime.datetime(2013, 1, i + 1))
-            for i in range(3)]
+        return [OrderedModel.create(
+            title=i, created=datetime.datetime(2013, 1, i + 1))
+                for i in range(3)]
 
     def create_user_blogs(self):
         users = []
@@ -1211,10 +1191,9 @@ class TestAggregatesWithModels(ModelTestCase):
             user = User.create(username='u-{0:d}'.format(i))
             for j in range(2):
                 ct += 1
-                Blog.create(
-                    user=user,
-                    title='b-{0:d}-{1:d}'.format(i, j),
-                    pub_date=datetime.datetime(2013, 1, ct))
+                Blog.create(user=user,
+                            title='b-{0:d}-{1:d}'.format(i, j),
+                            pub_date=datetime.datetime(2013, 1, ct))
             users.append(user)
         return users
 
@@ -1227,8 +1206,7 @@ class TestAggregatesWithModels(ModelTestCase):
 
     def test_annotate_datetime(self):
         users = self.create_user_blogs()
-        annotated = (User
-                     .select()
+        annotated = (User.select()
                      .annotate(Blog, fn.Max(Blog.pub_date).alias('max_pub')))
         user_0, user_1 = annotated
         assert user_0.max_pub == datetime.datetime(2013, 1, 2)
@@ -1241,8 +1219,7 @@ class TestAggregatesWithModels(ModelTestCase):
 
     def test_aggregate_datetime(self):
         models = self.create_ordered_models()
-        max_created = (OrderedModel
-                       .select()
+        max_created = (OrderedModel.select()
                        .aggregate(fn.Max(OrderedModel.created)))
         assert max_created == models[-1].created
 
@@ -1284,8 +1261,7 @@ class TestMultiTableFromClause(ModelTestCase):
 
         # Have to manually specify the alias as "t1" because the outer query
         # will expect that.
-        outer = (User
-                 .select(User.username)
+        outer = (User.select(User.username)
                  .from_(inner.alias('t1')))
         sql, params = compiler.generate_select(outer)
         assert sql == (
@@ -1310,8 +1286,7 @@ class TestMultiTableFromClause(ModelTestCase):
 
     def test_subselect_with_join(self):
         inner = User.select(User.id, User.username).alias('q1')
-        outer = (Blog
-                 .select(inner.c.id, inner.c.username)
+        outer = (Blog.select(inner.c.id, inner.c.username)
                  .from_(inner)
                  .join(Comment, on=(inner.c.id == Comment.id)))
         sql, params = compiler.generate_select(outer)
@@ -1325,19 +1300,16 @@ class TestMultiTableFromClause(ModelTestCase):
         u1 = User.get(User.username == 'u1')
 
         inner = User.select().alias('j1')
-        outer = (Blog
-                 .select(Blog.title, Blog.user)
+        outer = (Blog.select(Blog.title, Blog.user)
                  .join(inner, on=(Blog.user == inner.c.id))
                  .order_by(Blog.pk))
         res = [row for row in outer.tuples()]
-        assert res == [
-            ('b0-0', u0.id),
-            ('b0-1', u0.id),
-            ('b0-2', u0.id),
-            ('b1-0', u1.id),
-            ('b1-1', u1.id),
-            ('b1-2', u1.id),
-        ]
+        assert res == [('b0-0', u0.id),
+                       ('b0-1', u0.id),
+                       ('b0-2', u0.id),
+                       ('b1-0', u1.id),
+                       ('b1-1', u1.id),
+                       ('b1-2', u1.id)]
 
 
 class TestDeleteRecursive(ModelTestCase):
@@ -1390,13 +1362,11 @@ class TestDeleteRecursive(ModelTestCase):
         update_o = ('UPDATE `orphan` SET `parent_id` = %% WHERE ('
                     '`orphan`.`parent_id` = %%)')
         delete_p = 'DELETE FROM `parent` WHERE (`id` = %%)'
-        sql_params = [
-            (update_cnd, [None, self.p1.id]),
-            (delete_cp, [self.p1.id]),
-            (delete_c, [self.p1.id]),
-            (update_o, [None, self.p1.id]),
-            (delete_p, [self.p1.id]),
-        ]
+        sql_params = [(update_cnd, [None, self.p1.id]),
+                      (delete_cp, [self.p1.id]),
+                      (delete_c, [self.p1.id]),
+                      (update_o, [None, self.p1.id]),
+                      (delete_p, [self.p1.id])]
         self.assertQueriesEqual(queries, sql_params)
 
     def test_recursive_delete_child_queries(self):
@@ -1412,11 +1382,9 @@ class TestDeleteRecursive(ModelTestCase):
         delete_cp = 'DELETE FROM `childpet` WHERE (`child_id` = %%)'
         delete_c = 'DELETE FROM `child` WHERE (`id` = %%)'
 
-        sql_params = [
-            (update_cnd, [None, c2.id]),
-            (delete_cp, [c2.id]),
-            (delete_c, [c2.id]),
-        ]
+        sql_params = [(update_cnd, [None, c2.id]),
+                      (delete_cp, [c2.id]),
+                      (delete_c, [c2.id])]
         self.assertQueriesEqual(queries, sql_params)
 
     def assertQueriesEqual(self, queries, expected):
@@ -1438,8 +1406,7 @@ class TestDeleteRecursive(ModelTestCase):
             (Child.select(), Child.parent, 0, 2, 2),
             (Orphan.select(), Orphan.parent, 0, 2, 4),
             (ChildPet.select().join(Child), Child.parent, 0, 2, 2),
-            (OrphanPet.select().join(Orphan), Orphan.parent, 0, 2, 4),
-        )
+            (OrphanPet.select().join(Orphan), Orphan.parent, 0, 2, 4),)
 
         for query, fk, p1_ct, p2_ct, tot in counts:
             assert query.where(fk == self.p1).count() == p1_ct
@@ -1453,8 +1420,7 @@ class TestDeleteRecursive(ModelTestCase):
             (Child.select(), Child.parent, 0, 2, 2),
             (Orphan.select(), Orphan.parent, 0, 2, 2),
             (ChildPet.select().join(Child), Child.parent, 0, 2, 2),
-            (OrphanPet.select().join(Orphan), Orphan.parent, 0, 2, 2),
-        )
+            (OrphanPet.select().join(Orphan), Orphan.parent, 0, 2, 2),)
 
         for query, fk, p1_ct, p2_ct, tot in counts:
             assert query.where(fk == self.p1).count() == p1_ct
@@ -1476,14 +1442,12 @@ class TestDeleteRecursive(ModelTestCase):
         assert Package.select().count() == 2
         assert PackageItem.select().count() == 8
 
-        items = (PackageItem
-                 .select(PackageItem.title)
+        items = (PackageItem.select(PackageItem.title)
                  .order_by(PackageItem.id)
                  .tuples())
         assert [i[0] for i in items] == [
             '0-0', '0-1', '0-2', '0-3',
-            '2-0', '2-1', '2-2', '2-3',
-        ]
+            '2-0', '2-1', '2-2', '2-3']
 
 
 class TestTruncate(ModelTestCase):
@@ -1507,10 +1471,8 @@ class TestManyToMany(ModelTestCase):
         super(TestManyToMany, self).setUp()
         users = ['u1', 'u2', 'u3']
         categories = ['c1', 'c2', 'c3', 'c12', 'c23']
-        user_to_cat = {
-            'u1': ['c1', 'c12'],
-            'u2': ['c2', 'c12', 'c23'],
-        }
+        user_to_cat = {'u1': ['c1', 'c12'],
+                       'u2': ['c2', 'c12', 'c23'], }
         for u in users:
             User.create(username=u)
         for c in categories:
@@ -1524,8 +1486,7 @@ class TestManyToMany(ModelTestCase):
 
     def test_m2m(self):
         def aU(q, exp):
-            assert [u.username for u in q.order_by(User.username)] == \
-                   exp
+            assert [u.username for u in q.order_by(User.username)] == exp
 
         def aC(q, exp):
             assert [c.name for c in q.order_by(Category.name)] == exp
@@ -1551,14 +1512,11 @@ class TestManyToMany(ModelTestCase):
         aC(cats, [])
 
         cats = Category.select().join(UserCategory).join(User).where(
-            Category.name << ['c1', 'c2', 'c3']
-        )
+            Category.name << ['c1', 'c2', 'c3'])
         aC(cats, ['c1', 'c2'])
 
-        cats = Category.select().join(UserCategory, JOIN.LEFT_OUTER).join(User,
-                                                                          JOIN.LEFT_OUTER).where(
-            Category.name << ['c1', 'c2', 'c3']
-        )
+        cats = Category.select().join(UserCategory, JOIN.LEFT_OUTER).join(
+            User, JOIN.LEFT_OUTER).where(Category.name << ['c1', 'c2', 'c3'])
         aC(cats, ['c1', 'c2', 'c3'])
 
     def test_many_to_many_prefetch(self):
@@ -1576,15 +1534,10 @@ class TestManyToMany(ModelTestCase):
                     results[category.name].add(user_category.user.username)
                     result_list.append(user_category.user.username)
 
-        assert results == {
-            'c1': set(['u1']),
-            'c12': set(['u1', 'u2']),
-            'c2': set(['u2']),
-            'c23': set(['u2']),
-            'c3': set(),
-        }
-        assert sorted(result_list) == \
-               ['c1', 'c12', 'c2', 'c23', 'c3', 'u1', 'u1', 'u2', 'u2', 'u2']
+        assert results == dict(c1={'u1'}, c12={'u1', 'u2'}, c2={'u2'},
+                               c23={'u2'}, c3=set())
+        assert (sorted(result_list) == ['c1', 'c12', 'c2', 'c23', 'c3',
+                                        'u1', 'u1', 'u2', 'u2', 'u2'])
 
 
 class TestCustomModelOptionsBase(PeeweeTestCase):
@@ -1693,26 +1646,22 @@ class TestModelOptionInheritance(PeeweeTestCase):
         assert ChildModel._meta.database.database == 'testing.db'
         assert ChildModel._meta.model_class == ChildModel
         assert sorted(ChildModel._meta.fields.keys()) == [
-            'id', 'title', 'user'
-        ]
+            'id', 'title', 'user']
 
         assert ChildModel2._meta.database.database == 'child2.db'
         assert ChildModel2._meta.model_class == ChildModel2
         assert sorted(ChildModel2._meta.fields.keys()) == [
-            'id', 'special_field', 'title', 'user'
-        ]
+            'id', 'special_field', 'title', 'user']
 
         assert GrandChildModel._meta.database.database == 'testing.db'
         assert GrandChildModel._meta.model_class == GrandChildModel
         assert sorted(GrandChildModel._meta.fields.keys()) == [
-            'id', 'title', 'user'
-        ]
+            'id', 'title', 'user']
 
         assert GrandChildModel2._meta.database.database == 'child2.db'
         assert GrandChildModel2._meta.model_class == GrandChildModel2
         assert sorted(GrandChildModel2._meta.fields.keys()) == [
-            'id', 'special_field', 'title', 'user'
-        ]
+            'id', 'special_field', 'title', 'user']
         assert isinstance(GrandChildModel2._meta.fields['special_field'],
                           TextField)
 
@@ -1773,11 +1722,11 @@ class TestModelInheritance(ModelTestCase):
     requires = [Blog, BlogTwo, User]
 
     def test_model_inheritance_attrs(self):
-        assert Blog._meta.sorted_field_names == \
-               ['pk', 'user', 'title', 'content', 'pub_date']
-        assert BlogTwo._meta.sorted_field_names == \
-               ['pk', 'user', 'content', 'pub_date', 'title',
-                'extra_field']
+        assert Blog._meta.sorted_field_names == ['pk', 'user', 'title',
+                                                 'content', 'pub_date']
+        assert BlogTwo._meta.sorted_field_names == ['pk', 'user', 'content',
+                                                    'pub_date', 'title',
+                                                    'extra_field']
 
         assert Blog._meta.primary_key.name == 'pk'
         assert BlogTwo._meta.primary_key.name == 'pk'
@@ -1812,7 +1761,8 @@ class TestModelInheritance(ModelTestCase):
     def test_inheritance_primary_keys(self):
         assert not hasattr(Model, 'id')
 
-        class M1(Model): pass
+        class M1(Model):
+            pass
 
         assert hasattr(M1, 'id')
 
@@ -1828,18 +1778,21 @@ class TestModelInheritance(ModelTestCase):
         assert hasattr(M3, 'id')
         assert not M3.id.primary_key
 
-        class C1(M1): pass
+        class C1(M1):
+            pass
 
         assert hasattr(C1, 'id')
         assert C1.id.model_class is C1
 
-        class C2(M2): pass
+        class C2(M2):
+            pass
 
         assert not hasattr(C2, 'id')
         assert C2.key.primary_key
         assert C2.key.model_class is C2
 
-        class C3(M3): pass
+        class C3(M3):
+            pass
 
         assert hasattr(C3, 'id')
         assert not C3.id.primary_key
@@ -1862,10 +1815,9 @@ class TestAliasBehavior(ModelTestCase):
         assert normal_p == ['FOO']
         assert aliased_p == ['FOO']
 
-        expected = (
-            'SELECT "uppermodel"."id", "uppermodel"."data" '
-            'FROM "uppermodel" AS uppermodel '
-            'WHERE ("uppermodel"."data" = ?)')
+        expected = ('SELECT "uppermodel"."id", "uppermodel"."data" '
+                    'FROM "uppermodel" AS uppermodel '
+                    'WHERE ("uppermodel"."data" = ?)')
 
         query = UpperModel.select().where(UpperModel.data == 'foo')
         sql, params = compiler.generate_select(query)
@@ -1953,59 +1905,48 @@ class TestJoinNullableForeignKey(ModelTestCase):
 
     def test_no_empty_instances(self):
         with self.assertQueryCount(1):
-            query = (Orphan
-                     .select(Orphan, Parent)
+            query = (Orphan.select(Orphan, Parent)
                      .join(Parent, JOIN.LEFT_OUTER)
                      .order_by(Orphan.id))
             res = [(orphan.data, orphan.parent is None) for orphan in query]
 
-        assert res == [
-            ('orphan1-p1', False),
-            ('orphan2-p1', False),
-            ('orphan1-noparent', True),
-            ('orphan2-noparent', True),
-        ]
+        assert res == [('orphan1-p1', False),
+                       ('orphan2-p1', False),
+                       ('orphan1-noparent', True),
+                       ('orphan2-noparent', True)]
 
     def test_unselected_fk_pk(self):
         with self.assertQueryCount(1):
-            query = (Orphan
-                     .select(Orphan.data, Parent.data)
+            query = (Orphan.select(Orphan.data, Parent.data)
                      .join(Parent, JOIN.LEFT_OUTER)
                      .order_by(Orphan.id))
             res = [(orphan.data, orphan.parent is None) for orphan in query]
 
-        assert res == [
-            ('orphan1-p1', False),
-            ('orphan2-p1', False),
-            ('orphan1-noparent', False),
-            ('orphan2-noparent', False),
-        ]
+        assert res == [('orphan1-p1', False),
+                       ('orphan2-p1', False),
+                       ('orphan1-noparent', False),
+                       ('orphan2-noparent', False)]
 
     def test_non_null_fk_unselected_fk(self):
         with self.assertQueryCount(1):
-            query = (Child
-                     .select(Child.data, Parent.data)
+            query = (Child.select(Child.data, Parent.data)
                      .join(Parent, JOIN.LEFT_OUTER)
                      .order_by(Child.id))
             res = [(child.data, child.parent is None) for child in query]
 
-        assert res == [
-            ('child1-p1', False),
-            ('child1-p2', False),
-            ('child2-p1', False),
-            ('child2-p2', False),
-        ]
+        assert res == [('child1-p1', False),
+                       ('child1-p2', False),
+                       ('child2-p1', False),
+                       ('child2-p2', False)]
 
         res = [child.parent.data for child in query]
         assert res == ['p1', 'p2', 'p1', 'p2']
 
         res = [(child._data['parent'], child.parent.id) for child in query]
-        assert res == [
-            (None, None),
-            (None, None),
-            (None, None),
-            (None, None),
-        ]
+        assert res == [(None, None),
+                       (None, None),
+                       (None, None),
+                       (None, None)]
 
 
 class TestDefaultDirtyBehavior(PeeweeTestCase):

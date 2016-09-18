@@ -10,7 +10,7 @@ from peewee import (BigIntegerField, BlobField, BooleanField, CharField, Check,
                     SQL, TextField, TimeField, TimestampField, UUIDField)
 from tests.base import TestModel
 
-__all__ = [
+__all__ = (
     'User',
     'Blog',
     'Comment',
@@ -82,7 +82,7 @@ __all__ = [
 
     'MODELS',
     'SnippetDeferred',
-]
+)
 
 if sys.version_info[0] == 3:
     long = int

@@ -6,7 +6,7 @@ from peewee import (CharField, DecimalField, DeferredRelation, ForeignKeyField,
                     IntegrityError, JOIN, Model, OperationalError,
                     SqliteDatabase, TextField, fn)
 from tests.base import (ModelTestCase, PeeweeTestCase, TestModel, compiler,
-                        database_initializer, skip_test_if, test_db)
+                        database_initializer, test_db)
 from tests.models import (Blog, Component, CompositeKeyModel, Computer,
                           Language, Manufacturer, Package, PackageItem, Post,
                           Relationship, Snippet, Tag, TagPostThrough, User,
@@ -41,8 +41,7 @@ class TestMultipleForeignKey(ModelTestCase):
     requires = [Manufacturer, Component, Computer]
     test_values = [
         ['3TB', '16GB', 'i7'],
-        ['128GB', '1GB', 'ARM'],
-    ]
+        ['128GB', '1GB', 'ARM']]
 
     def setUp(self):
         super(TestMultipleForeignKey, self).setUp()
@@ -106,7 +105,7 @@ class TestMultipleForeignKey(ModelTestCase):
 
             assert vals == self.test_values
             assert manufacturers == [None, 'Kingston', 'Intel',
-                                     None, 'Kingston', 'AMD', ]
+                                     None, 'Kingston', 'AMD']
 
 
 class TestMultipleForeignKeysJoining(ModelTestCase):
@@ -126,7 +125,7 @@ class TestMultipleForeignKeysJoining(ModelTestCase):
         assert list(b.relationships) == []
         assert list(b.related_to) == [r_ab]
 
-        r_bc = Relationship.create(from_user=b, to_user=c)
+        Relationship.create(from_user=b, to_user=c)
 
         following = User.select().join(Relationship, on=Relationship.to_user
                                        ).where(Relationship.from_user == a)
@@ -261,14 +260,15 @@ class TestCompositePrimaryKey(ModelTestCase):
     def test_delete_instance(self):
         u1, u2 = [User.create(username='u{0!s}'.format(i)) for i in range(2)]
         ut1 = UserThing.create(thing='t1', user=u1)
-        ut2 = UserThing.create(thing='t2', user=u1)
-        ut3 = UserThing.create(thing='t1', user=u2)
-        ut4 = UserThing.create(thing='t3', user=u2)
+        UserThing.create(thing='t2', user=u1)
+        UserThing.create(thing='t1', user=u2)
+        UserThing.create(thing='t3', user=u2)
 
         res = ut1.delete_instance()
         assert res == 1
-        assert [x.thing for x in UserThing.select()
-            .order_by(UserThing.thing)] == ['t1', 't2', 't3']
+        assert ([x.thing for x in (UserThing.select()
+                                   .order_by(UserThing.thing))] ==
+                ['t1', 't2', 't3'])
 
 
 class TestForeignKeyNonPrimaryKeyCreateTable(PeeweeTestCase):
@@ -316,8 +316,7 @@ class TestDeferredForeignKey(ModelTestCase):
 
     def test_field_definitions(self):
         assert Snippet._meta.fields['language'].rel_model == Language
-        assert Language._meta.fields['selected_snippet'].rel_model == \
-               Snippet
+        assert Language._meta.fields['selected_snippet'].rel_model == Snippet
 
     def test_deferred_relation_resolution(self):
         orig = len(DeferredRelation._unresolved)
@@ -391,8 +390,7 @@ class TestSQLiteDeferredForeignKey(PeeweeTestCase):
             Tweet.create_table()
 
         # SQLite does not support alter + add constraint.
-        with pytest.raises(
-            OperationalError):
+        with pytest.raises(OperationalError):
             db.create_foreign_key(User, User.favorite_tweet)
 
 
@@ -419,44 +417,8 @@ class TestForeignKeyConstraints(ModelTestCase):
         max_id = User.select(fn.Max(User.id)).scalar() or 0
 
         def will_fail():
-            with test_db.transaction() as txn:
+            with test_db.transaction():
                 Blog.create(user=max_id + 1, title='testing')
 
         with pytest.raises(IntegrityError):
             will_fail()
-
-    @skip_test_if(lambda: isinstance(test_db, SqliteDatabase))
-    def test_constraint_creation(self):
-        class FKC_a(TestModel):
-            name = CharField()
-
-        fkc_deferred = DeferredRelation()
-
-        class FKC_b(TestModel):
-            fkc_a = ForeignKeyField(fkc_deferred)
-
-        fkc_deferred.set_model(FKC_a)
-
-        with test_db.transaction() as txn:
-            FKC_b.drop_table(True)
-            FKC_a.drop_table(True)
-            FKC_a.create_table()
-            FKC_b.create_table()
-
-            # Foreign key constraint is not enforced.
-            fb = FKC_b.create(fkc_a=-1000)
-            fb.delete_instance()
-
-            # Add constraint.
-            test_db.create_foreign_key(FKC_b, FKC_b.fkc_a)
-
-            def _trigger_exc():
-                with test_db.savepoint() as s1:
-                    fb = FKC_b.create(fkc_a=-1000)
-
-            with pytest.raises(IntegrityError):
-                _trigger_exc()
-
-            fa = FKC_a.create(name='fa')
-            fb = FKC_b.create(fkc_a=fa)
-            txn.rollback()

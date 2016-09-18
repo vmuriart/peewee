@@ -49,13 +49,13 @@ class User(BaseModel):
     def following(self):
         # query other users through the "relationship" table
         return User.select().join(
-            Relationship, on=Relationship.to_user,
-        ).where(Relationship.from_user == self)
+            Relationship, on=Relationship.to_user).where(
+            Relationship.from_user == self)
 
     def followers(self):
         return User.select().join(
-            Relationship, on=Relationship.from_user,
-        ).where(Relationship.to_user == self)
+            Relationship, on=Relationship.from_user).where(
+            Relationship.to_user == self)
 
     def is_following(self, user):
         return Relationship.select().where(
@@ -64,8 +64,8 @@ class User(BaseModel):
         ).count() > 0
 
     def gravatar_url(self, size=80):
-        return 'http://www.gravatar.com/avatar/{0!s}?d=identicon&s={1:d}'.format(md5(self.email.strip().lower().encode('utf-8')).hexdigest(),
-                size)
+        return 'http://www.gravatar.com/avatar/{0!s}?d=identicon&s={1:d}'.format(
+            md5(self.email.strip().lower().encode('utf-8')).hexdigest(), size)
 
 
 # this model contains two foreign keys to user -- it essentially allows us to
@@ -77,10 +77,8 @@ class Relationship(BaseModel):
     to_user = ForeignKeyField(User, related_name='related_to')
 
     class Meta:
-        indexes = (
-            # Specify a unique multi-column index on from/to-user.
-            (('from_user', 'to_user'), True),
-        )
+        # Specify a unique multi-column index on from/to-user.
+        indexes = ((('from_user', 'to_user'), True))
 
 
 # a dead simple one-to-many relationship: one user has 0..n messages, exposed
@@ -289,9 +287,8 @@ def user_follow(username):
     user = get_object_or_404(User, User.username == username)
     try:
         with database.transaction():
-            Relationship.create(
-                from_user=get_current_user(),
-                to_user=user)
+            Relationship.create(from_user=get_current_user(),
+                                to_user=user)
     except IntegrityError:
         pass
 
@@ -316,10 +313,9 @@ def user_unfollow(username):
 def create():
     user = get_current_user()
     if request.method == 'POST' and request.form['content']:
-        message = Message.create(
-            user=user,
-            content=request.form['content'],
-            pub_date=datetime.datetime.now())
+        message = Message.create(user=user,
+                                 content=request.form['content'],
+                                 pub_date=datetime.datetime.now())
         flash('Your message has been created')
         return redirect(url_for('user_detail', username=user.username))
 

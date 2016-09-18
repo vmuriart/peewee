@@ -3,7 +3,7 @@
 import pytest
 
 from peewee import ForeignKeyField, Model
-from peewee.core import sort_models_topologically
+from peewee.utils import sort_models_topologically
 from tests.base import PeeweeTestCase, test_db
 
 
@@ -57,7 +57,8 @@ class TestTopologicalSorting(PeeweeTestCase):
             e = FKF('self')
 
         # but excluding this model, which is a child of E
-        class Excluded(Model): e = FKF(E)
+        class Excluded(Model):
+            e = FKF(E)
 
         # property 1: output ordering must not depend upon input order
         repeatable_ordering = None

@@ -232,8 +232,7 @@ class TestCompoundSelectQueries(ModelTestCase):
     def assertPermutations(self, op, expected):
         fields = {User: User.username,
                   UniqueModel: UniqueModel.name,
-                  OrderedModel: OrderedModel.title,
-                  }
+                  OrderedModel: OrderedModel.title}
         for key in itertools.permutations(fields.keys(), 2):
             if key in expected:
                 left, right = key
@@ -252,12 +251,10 @@ class TestCompoundSelectQueries(ModelTestCase):
             (UniqueModel, User): all_letters,
             (UniqueModel, OrderedModel): all_letters,
             (OrderedModel, User): all_letters,
-            (OrderedModel, UniqueModel): all_letters,
-        })
+            (OrderedModel, UniqueModel): all_letters})
 
     @requires_op('UNION ALL')
-    def test_union(self):
-        all_letters = ['a', 'b', 'c', 'd', 'e']
+    def test_union2(self):
         users = User.select(User.username)
         uniques = UniqueModel.select(UniqueModel.name)
         query = users.union_all(uniques)
@@ -397,4 +394,3 @@ class TestCompoundSelectQueries(ModelTestCase):
         rhs = User.select().where(User.username << ['d', 'x'])
         cq = (lhs | rhs)
         assert cq.count() == 3
-

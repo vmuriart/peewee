@@ -66,8 +66,8 @@ class TestMultiThreadedQueries(ModelTestCase):
         threads = []
 
         for i in range(self.threads):
-            threads.append(
-                threading.Thread(target=reader_thread, args=(data_queue, 20)))
+            threads.append(threading.Thread(target=reader_thread,
+                                            args=(data_queue, 20)))
 
         [t.start() for t in threads]
         [t.join() for t in threads]
@@ -94,7 +94,7 @@ class TestDeferredDatabase(PeeweeTestCase):
         assert not deferred_db.deferred
 
         # connecting works
-        conn = deferred_db.connect()
+        deferred_db.connect()
         DeferredModel.create_table()
         sq = DeferredModel.select()
         assert list(sq) == []
@@ -122,8 +122,7 @@ class TestSQLAll(PeeweeTestCase):
         assert sql == [
             ('CREATE TABLE "uniquemodel" ("id" INTEGER NOT NULL PRIMARY KEY, '
              '"name" VARCHAR(255) NOT NULL)'),
-            'CREATE UNIQUE INDEX "uniquemodel_name" ON "uniquemodel" ("name")',
-        ]
+            'CREATE UNIQUE INDEX "uniquemodel_name" ON "uniquemodel" ("name")']
 
         sql = MultiIndexModel.sqlall()
         assert sql == [
@@ -133,14 +132,12 @@ class TestSQLAll(PeeweeTestCase):
             ('CREATE UNIQUE INDEX "multiindexmodel_f1_f2" ON "multiindexmodel"'
              ' ("f1", "f2")'),
             ('CREATE INDEX "multiindexmodel_f2_f3" ON "multiindexmodel" '
-             '("f2", "f3")'),
-        ]
+             '("f2", "f3")')]
 
         sql = SeqModelA.sqlall()
         assert sql == [
             ('CREATE TABLE "seqmodela" ("id" INTEGER NOT NULL PRIMARY KEY '
-             'DEFAULT NEXTVAL(\'just_testing_seq\'), "num" INTEGER NOT NULL)'),
-        ]
+             'DEFAULT NEXTVAL(\'just_testing_seq\'), "num" INTEGER NOT NULL)')]
 
 
 class TestLongIndexName(PeeweeTestCase):
@@ -159,8 +156,7 @@ class TestLongIndexName(PeeweeTestCase):
             'ON "longindexmodel" ('
             '"a123456789012345678901234567890", '
             '"b123456789012345678901234567890", '
-            '"c123456789012345678901234567890")'
-        )
+            '"c123456789012345678901234567890")')
 
 
 class TestDroppingIndex(ModelTestCase):
@@ -176,8 +172,7 @@ class TestDroppingIndex(ModelTestCase):
             class Meta:
                 database = db
                 indexes = ((('f1', 'f2'), True),
-                           (('idx', 'uniq'), False),
-                           )
+                           (('idx', 'uniq'), False))
 
         IndexedModel.create_table()
         indexes = db.get_indexes(IndexedModel._meta.db_table)
@@ -198,11 +193,11 @@ class TestDroppingIndex(ModelTestCase):
 
 class TestConnectionState(PeeweeTestCase):
     def test_connection_state(self):
-        conn = test_db.get_conn()
+        test_db.get_conn()
         assert not test_db.is_closed()
         test_db.close()
         assert test_db.is_closed()
-        conn = test_db.get_conn()
+        test_db.get_conn()
         assert not test_db.is_closed()
 
     def test_sql_error(self):
@@ -218,7 +213,7 @@ class TestDropTableCascade(ModelTestCase):
 
     def test_drop_cascade(self):
         u1 = User.create(username='u1')
-        b1 = Blog.create(user=u1, title='b1')
+        Blog.create(user=u1, title='b1')
 
         User.drop_table(cascade=True)
         assert not User.table_exists()
@@ -309,11 +304,11 @@ class TestConnectionInitialization(PeeweeTestCase):
         db = TestDatabase(':memory:')
         assert not state['initialized']
 
-        conn = db.get_conn()
+        db.get_conn()
         assert state['initialized'] == 1
 
         # Since a conn is already open, this will return the existing conn.
-        conn = db.get_conn()
+        db.get_conn()
         assert state['initialized'] == 1
 
         db.close()

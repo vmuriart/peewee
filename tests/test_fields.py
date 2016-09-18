@@ -148,7 +148,8 @@ class TestFieldTypes(ModelTestCase):
 
         nm_from_db = NullModel.get(NullModel.id == nm.id)
         # sqlite doesn't enforce these constraints properly
-        # self.assertEqual(nm_from_db.decimal_field1, decimal.Decimal("3.14159"))
+        # self.assertEqual(nm_from_db.decimal_field1,
+        #                  decimal.Decimal("3.14159"))
         assert nm_from_db.decimal_field2 == D("100.33")
 
         class TestDecimalModel(TestModel):
@@ -213,7 +214,7 @@ class TestFieldTypes(ModelTestCase):
             (None, None),
             (T(0, 0), T(0, 0)),
             (datetime.timedelta(seconds=(4 * 60 * 60) + (20 * 60)), T(4, 20)),
-            (datetime.timedelta(seconds=0), T(0, 0)),
+            (datetime.timedelta(seconds=0), T(0, 0))
         )
         for val, expected in tests:
             assert tf.python_value(val) == expected
@@ -238,13 +239,13 @@ class TestFieldTypes(ModelTestCase):
             2012, 1, 1, 11, 11, 11, 123456)
         assert dtf.python_value('2012-01-01 11:11:11') == d(
             2012, 1, 1, 11, 11, 11)
-        assert dtf.python_value('2012-01-01') == d(2012, 1, 1, )
+        assert dtf.python_value('2012-01-01') == d(2012, 1, 1)
         assert dtf.python_value('2012 01 01') == '2012 01 01'
 
         d = datetime.date
-        assert df.python_value('2012-01-01 11:11:11.123456') == d(2012, 1, 1, )
-        assert df.python_value('2012-01-01 11:11:11') == d(2012, 1, 1, )
-        assert df.python_value('2012-01-01') == d(2012, 1, 1, )
+        assert df.python_value('2012-01-01 11:11:11.123456') == d(2012, 1, 1)
+        assert df.python_value('2012-01-01 11:11:11') == d(2012, 1, 1)
+        assert df.python_value('2012-01-01') == d(2012, 1, 1)
         assert df.python_value('2012 01 01') == '2012 01 01'
 
         t = datetime.time
@@ -253,7 +254,7 @@ class TestFieldTypes(ModelTestCase):
         assert tf.python_value('2012-01-01 11:11:11') == t(11, 11, 11)
         assert tf.python_value('11:11:11.123456') == t(11, 11, 11, 123456)
         assert tf.python_value('11:11:11') == t(11, 11, 11)
-        assert tf.python_value('11:11') == t(11, 11, )
+        assert tf.python_value('11:11') == t(11, 11)
         assert tf.python_value('11:11 AM') == '11:11 AM'
 
         class CustomFormatsModel(Model):
@@ -269,11 +270,11 @@ class TestFieldTypes(ModelTestCase):
         assert (dtf.python_value('2012-01-01 11:11:11.123456') ==
                 '2012-01-01 11:11:11.123456')
         assert dtf.python_value('Jan 1, 2012 11:11:11 PM') == d(
-            2012, 1, 1, 23, 11, 11, )
+            2012, 1, 1, 23, 11, 11)
 
         d = datetime.date
         assert df.python_value('2012-01-01') == '2012-01-01'
-        assert df.python_value('Jan 1, 2012') == d(2012, 1, 1, )
+        assert df.python_value('Jan 1, 2012') == d(2012, 1, 1)
 
         t = datetime.time
         assert tf.python_value('11:11:11') == '11:11:11'
@@ -336,7 +337,7 @@ class TestFieldTypes(ModelTestCase):
         self.assertNM(NullModel.char_field.endswith('4'), [])
 
     def test_regexp(self):
-        values = ['abcdefg', 'abcd', 'defg', 'gij', 'xx', ]
+        values = ['abcdefg', 'abcd', 'defg', 'gij', 'xx']
         for value in values:
             NullModel.create(char_field=value)
 
@@ -402,8 +403,7 @@ class TestTimestampField(ModelTestCase):
         assert t1_db.id == t1.id
         assert t1_db.local_us == dt
         assert t1_db.utc_ms == dt.replace(microsecond=654000)
-        assert t1_db.local == \
-               dt.replace(microsecond=0).replace(second=14)
+        assert t1_db.local == dt.replace(microsecond=0).replace(second=14)
 
         t2_db = TimestampModel.get(TimestampModel.utc_ms == d)
         assert t2_db.id == t2.id
@@ -451,7 +451,7 @@ class TestDateTimeExtract(ModelTestCase):
         datetime.datetime(2001, 1, 2, 3, 4, 5),
         datetime.datetime(2002, 2, 3, 4, 5, 6),
         # overlap on year and hour with previous
-        datetime.datetime(2002, 3, 4, 4, 6, 7), ]
+        datetime.datetime(2002, 3, 4, 4, 6, 7)]
     datetime_parts = ['year', 'month', 'day', 'hour', 'minute', 'second']
     date_parts = datetime_parts[:3]
     time_parts = datetime_parts[3:]
@@ -583,7 +583,7 @@ class TestNonIntegerPrimaryKey(ModelTestCase):
 
         assert [(x.pk, x.data) for x in
                 NonIntModel.select().order_by(NonIntModel.pk)] == [
-                   ('a1', 'ni1'), ('a2', 'ni2'), ]
+                   ('a1', 'ni1'), ('a2', 'ni2')]
 
     def test_non_int_fk(self):
         ni1 = NonIntModel.create(pk='a1', data='ni1')
@@ -677,7 +677,7 @@ class TestFieldDatabaseColumn(ModelTestCase):
 
 class _SqliteDateTestHelper(PeeweeTestCase):
     datetimes = [datetime.datetime(2000, 1, 2, 3, 4, 5),
-                 datetime.datetime(2000, 2, 3, 4, 5, 6), ]
+                 datetime.datetime(2000, 2, 3, 4, 5, 6)]
 
     def create_date_model(self, date_fn):
         dp_db = SqliteDatabase(':memory:')
@@ -804,7 +804,7 @@ class TestServerDefaults(ModelTestCase):
 
 
 class TestUUIDField(ModelTestCase):
-    requires = [TestingID, UUIDData, UUIDRelatedModel, ]
+    requires = [TestingID, UUIDData, UUIDRelatedModel]
 
     def test_uuid(self):
         uuid_str = 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11'
@@ -881,7 +881,7 @@ class TestUUIDField(ModelTestCase):
                 accum.append((item.data, [
                     rel.value for rel in item.related_models_prefetch]))
 
-            assert accum == [('a', [0, 1, 2]), ('b', [0, 1, 2]), ]
+            assert accum == [('a', [0, 1, 2]), ('b', [0, 1, 2])]
 
 
 @skip_unless(lambda: isinstance(test_db, SqliteDatabase))

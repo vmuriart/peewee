@@ -45,18 +45,15 @@ class TestTransaction(ModelTestCase):
 
     def test_atomic_nesting(self):
         db = SqliteDatabase(':memory:')
-        db_patches = mock.patch.multiple(
-            db,
-            begin=mock.DEFAULT,
-            commit=mock.DEFAULT,
-            execute_sql=mock.DEFAULT,
-            rollback=mock.DEFAULT)
+        db_patches = mock.patch.multiple(db, begin=mock.DEFAULT,
+                                         commit=mock.DEFAULT,
+                                         execute_sql=mock.DEFAULT,
+                                         rollback=mock.DEFAULT)
 
         with mock.patch('peewee.core.Database', wraps=db) as patched_db:
             with db_patches as db_mocks:
                 begin = db_mocks['begin']
                 commit = db_mocks['commit']
-                execute_sql = db_mocks['execute_sql']
                 rollback = db_mocks['rollback']
 
                 with _atomic(patched_db):
@@ -74,8 +71,7 @@ class TestTransaction(ModelTestCase):
                         with _atomic(patched_db):
                             patched_db.transaction.assert_called_once_with()
                             begin.assert_called_once_with()
-                            assert patched_db.savepoint.call_count == \
-                                   2
+                            assert patched_db.savepoint.call_count == 2
 
                     begin.assert_called_once_with()
                     assert commit.call_count == 0
@@ -88,8 +84,8 @@ class TestTransaction(ModelTestCase):
         test_db.set_autocommit(False)
         test_db.begin()
 
-        u1 = User.create(username='u1')
-        u2 = User.create(username='u2')
+        User.create(username='u1')
+        User.create(username='u2')
 
         # open up a new connection to the database, it won't register any blogs
         # as being created
@@ -131,8 +127,7 @@ class TestTransaction(ModelTestCase):
     def test_manual_commit_rollback(self):
         def assertUsers(expected):
             query = User.select(User.username).order_by(User.username)
-            assert [username for username, in query.tuples()] == \
-                   expected
+            assert [username for username, in query.tuples()] == expected
 
         with test_db.transaction() as txn:
             User.create(username='charlie')
@@ -245,7 +240,7 @@ class TestExecutionContext(ModelTestCase):
             assert User.select().where(User.username == 'charlie').exists()
             assert test_db.execution_context_depth() == 1
         assert test_db.execution_context_depth() == 0
-        queries = self.queries()
+        self.queries()
 
     def test_context_ext(self):
         with test_db.execution_context():
@@ -300,8 +295,8 @@ class TestExecutionContext(ModelTestCase):
             thread.start()
         [thread.join() for thread in threads]
         assert [user.username for user in
-                User.select().order_by(User.username)] == \
-               ['u0', 'u1', 'u2', 'u3', 'u4']
+                User.select().order_by(User.username)] == ['u0', 'u1', 'u2',
+                                                           'u3', 'u4']
 
     def test_context_conn_error(self):
         class MagicException(Exception):
@@ -354,7 +349,7 @@ class TestAutoRollback(ModelTestCase):
         assert u.id == u_db.id
 
     def test_transaction_ctx_mgr(self):
-        'Only auto-rollback when autocommit is enabled.'
+        """Only auto-rollback when autocommit is enabled."""
 
         def create_error():
             with pytest.raises(IntegrityError):
@@ -436,8 +431,7 @@ class TestSavepoints(ModelTestCase):
 
     def test_failure(self):
         with test_db.transaction():
-            with pytest.raises(
-                ValueError):
+            with pytest.raises(ValueError):
                 self._outer(fail_outer=True, fail_inner=True)
             assert User.select().count() == 0
 
@@ -464,8 +458,7 @@ class TestAtomic(ModelTestCase):
             User.create(username='u6')
 
         query = User.select().order_by(User.username)
-        assert [u.username for u in query] == \
-               ['u1', 'u2', 'u4', 'u6']
+        assert [u.username for u in query] == ['u1', 'u2', 'u4', 'u6']
 
     def test_atomic_second_connection(self):
         def test_separate_conn(expected):
@@ -489,12 +482,10 @@ class TestAtomic(ModelTestCase):
             test_separate_conn([])
 
             users = User.select(User.username).order_by(User.username)
-            assert [user.username for user in users] == \
-                   ['u1', 'u2']
+            assert [user.username for user in users] == ['u1', 'u2']
 
         users = User.select(User.username).order_by(User.username)
-        assert [user.username for user in users] == \
-               ['u1', 'u2']
+        assert [user.username for user in users] == ['u1', 'u2']
 
     def test_atomic_decorator(self):
         @test_db.atomic()
