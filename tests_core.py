@@ -1,3 +1,6 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
 """
 
 Aggregate all the test modules and run from the command-line. For information
