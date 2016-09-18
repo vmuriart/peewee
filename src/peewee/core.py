@@ -346,8 +346,9 @@ def not_allowed(func):
     """
 
     def inner(self, *args, **kwargs):
-        raise NotImplementedError('{0!s} is not allowed on {1!s} instances'.format(
-            func, type(self).__name__))
+        raise NotImplementedError(
+            '{0!s} is not allowed on {1!s} instances'.format(
+                func, type(self).__name__))
 
     return inner
 
@@ -965,7 +966,8 @@ class Field(Node):
         modifiers = self.get_modifiers()
         if modifiers:
             return SQL(
-                '{0!s}({1!s})'.format(column_type, ', '.join(map(str, modifiers))))
+                '{0!s}({1!s})'.format(column_type,
+                                      ', '.join(map(str, modifiers))))
         return SQL(column_type)
 
     def __ddl__(self, column_type):
@@ -1023,7 +1025,8 @@ class _AutoPrimaryKeyField(PrimaryKeyField):
 
     def add_to_class(self, model_class, name):
         if name != self._column_name:
-            raise ValueError('{0!s} must be named `{1!s}`.'.format(type(self), name))
+            raise ValueError(
+                '{0!s} must be named `{1!s}`.'.format(type(self), name))
         super(_AutoPrimaryKeyField, self).add_to_class(model_class, name)
 
 
@@ -1252,8 +1255,9 @@ class TimestampField(IntegerField):
     def __init__(self, *args, **kwargs):
         self.resolution = kwargs.pop('resolution', 1) or 1
         if self.resolution not in self.valid_resolutions:
-            raise ValueError('TimestampField resolution must be one of: {0!s}'.format(
-                             ', '.join(str(i) for i in self.valid_resolutions)))
+            raise ValueError(
+                'TimestampField resolution must be one of: {0!s}'.format(
+                    ', '.join(str(i) for i in self.valid_resolutions)))
 
         self.utc = kwargs.pop('utc', False) or False
         _dt = datetime.datetime
@@ -1413,7 +1417,8 @@ class ForeignKeyField(IntegerField):
     def _get_related_name(self):
         if self._related_name and callable(self._related_name):
             return self._related_name(self)
-        return self._related_name or ('{0!s}_set'.format(self.model_class._meta.name))
+        return self._related_name or (
+            '{0!s}_set'.format(self.model_class._meta.name))
 
     def add_to_class(self, model_class, name):
         if isinstance(self.rel_model, Proxy):
@@ -1429,7 +1434,8 @@ class ForeignKeyField(IntegerField):
 
         self.name = name
         self.model_class = model_class
-        self.db_column = obj_id_name = self.db_column or '{0!s}_id'.format(self.name)
+        self.db_column = obj_id_name = self.db_column or '{0!s}_id'.format(
+            self.name)
         if obj_id_name == self.name:
             obj_id_name += '_id'
         if not self.verbose_name:
@@ -1552,7 +1558,8 @@ class AliasMap(object):
         if obj in self._alias_map:
             return
         self._counter += 1
-        self._alias_map[obj] = alias or '{0!s}{1!s}'.format(self.prefix, self._counter)
+        self._alias_map[obj] = alias or '{0!s}{1!s}'.format(self.prefix,
+                                                            self._counter)
 
     def __getitem__(self, obj):
         if obj not in self._alias_map:
@@ -2177,7 +2184,8 @@ class QueryCompiler(object):
         index = '{0!s}_{1!s}'.format(table, '_'.join(columns))
         if len(index) > 64:
             index_hash = hashlib.md5(index.encode('utf-8')).hexdigest()
-            index = '{0!s}_{1!s}'.format(table[:55], index_hash[:8])  # 55 + 1 + 8 = 64
+            index = '{0!s}_{1!s}'.format(table[:55],
+                                         index_hash[:8])  # 55 + 1 + 8 = 64
         return index
 
     def _create_index(self, model_class, fields, unique, *extra):
@@ -3147,7 +3155,8 @@ class SelectQuery(Query):
             return next(clone.execute())
         except StopIteration:
             raise self.model_class.DoesNotExist(
-                'Instance matching query does not exist:\nSQL: {0!s}\nPARAMS: {1!s}'.format(*self.sql()))
+                'Instance matching query does not exist:\nSQL: {0!s}\nPARAMS: {1!s}'.format(
+                    *self.sql()))
 
     def peek(self, n=1):
         res = self.execute()
@@ -3404,7 +3413,8 @@ class InsertQuery(_WriteQuery):
 
             def validate_field(field):
                 if field not in valid_fields:
-                    raise KeyError('"{0!s}" is not a recognized field.'.format(field))
+                    raise KeyError(
+                        '"{0!s}" is not a recognized field.'.format(field))
 
         defaults = model_meta._default_dict
         callables = model_meta._default_callables
@@ -3949,7 +3959,8 @@ class SqliteDatabase(Database):
         # Retrieve the indexed columns.
         index_columns = {}
         for index_name in sorted(index_to_sql):
-            cursor = self.execute_sql('PRAGMA index_info("{0!s}")'.format(index_name))
+            cursor = self.execute_sql(
+                'PRAGMA index_info("{0!s}")'.format(index_name))
             index_columns[index_name] = [row[2] for row in cursor.fetchall()]
 
         return [
@@ -3971,7 +3982,8 @@ class SqliteDatabase(Database):
         return [row[1] for row in cursor.fetchall() if row[-1]]
 
     def get_foreign_keys(self, table, schema=None):
-        cursor = self.execute_sql('PRAGMA foreign_key_list("{0!s}")'.format(table))
+        cursor = self.execute_sql(
+            'PRAGMA foreign_key_list("{0!s}")'.format(table))
         return [ForeignKeyMetadata(row[3], row[2], row[4], table)
                 for row in cursor.fetchall()]
 
@@ -4032,7 +4044,8 @@ class PostgresqlDatabase(Database):
         if meta.primary_key is not False and meta.primary_key.sequence:
             return meta.primary_key.sequence
         elif meta.auto_increment:
-            return '{0!s}_{1!s}_seq'.format(meta.db_table, meta.primary_key.db_column)
+            return '{0!s}_{1!s}_seq'.format(meta.db_table,
+                                            meta.primary_key.db_column)
 
     def last_insert_id(self, cursor, model):
         sequence = self._get_pk_sequence(model)
@@ -4045,7 +4058,8 @@ class PostgresqlDatabase(Database):
         else:
             schema = ''
 
-        cursor.execute("SELECT CURRVAL('{0!s}\"{1!s}\"')".format(schema, sequence))
+        cursor.execute(
+            "SELECT CURRVAL('{0!s}\"{1!s}\"')".format(schema, sequence))
         result = cursor.fetchone()[0]
         if self.get_autocommit():
             self.commit()
@@ -4130,7 +4144,8 @@ class PostgresqlDatabase(Database):
 
     def set_search_path(self, *search_path):
         path_params = ','.join(['%s'] * len(search_path))
-        self.execute_sql('SET search_path TO {0!s}'.format(path_params), search_path)
+        self.execute_sql('SET search_path TO {0!s}'.format(path_params),
+                         search_path)
 
     def get_noop_sql(self):
         return 'SELECT 0 WHERE false'
@@ -5128,7 +5143,8 @@ def prefetch_add_subquery(sq, subqueries):
                 break
 
         if not (fks or backrefs):
-            tgt_err = ' using {0!s}'.format(target_model) if target_model else ''
+            tgt_err = ' using {0!s}'.format(
+                target_model) if target_model else ''
             raise AttributeError('Error: unable to find foreign key for '
                                  'query: %s%s' % (subquery, tgt_err))
 
