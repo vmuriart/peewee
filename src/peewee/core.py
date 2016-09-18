@@ -249,14 +249,8 @@ except ImportError:
             return s[ct:-ct]
         return s
 
-try:
-    from playhouse._speedups import _DictQueryResultWrapper
-    from playhouse._speedups import _ModelQueryResultWrapper
-    from playhouse._speedups import _SortedFieldList
-    from playhouse._speedups import _TuplesQueryResultWrapper
-except ImportError:
-    _DictQueryResultWrapper = _ModelQueryResultWrapper = _SortedFieldList = \
-        _TuplesQueryResultWrapper = None
+_DictQueryResultWrapper = _ModelQueryResultWrapper = None
+_SortedFieldList = _TuplesQueryResultWrapper = None
 
 if sqlite3:
     sqlite3.register_adapter(decimal.Decimal, str)
@@ -3600,34 +3594,44 @@ ForeignKeyMetadata = namedtuple(
     ('column', 'dest_table', 'dest_column', 'table'))
 
 
-class PeeweeException(Exception): pass
+class PeeweeException(Exception):
+    pass
 
 
-class ImproperlyConfigured(PeeweeException): pass
+class ImproperlyConfigured(PeeweeException):
+    pass
 
 
-class DatabaseError(PeeweeException): pass
+class DatabaseError(PeeweeException):
+    pass
 
 
-class DataError(DatabaseError): pass
+class DataError(DatabaseError):
+    pass
 
 
-class IntegrityError(DatabaseError): pass
+class IntegrityError(DatabaseError):
+    pass
 
 
-class InterfaceError(PeeweeException): pass
+class InterfaceError(PeeweeException):
+    pass
 
 
-class InternalError(DatabaseError): pass
+class InternalError(DatabaseError):
+    pass
 
 
-class NotSupportedError(DatabaseError): pass
+class NotSupportedError(DatabaseError):
+    pass
 
 
-class OperationalError(DatabaseError): pass
+class OperationalError(DatabaseError):
+    pass
 
 
-class ProgrammingError(DatabaseError): pass
+class ProgrammingError(DatabaseError):
+    pass
 
 
 class ExceptionWrapper(object):
@@ -4609,7 +4613,8 @@ if _SortedFieldList is None:
             del self._keys[idx]
 
 
-class DoesNotExist(Exception): pass
+class DoesNotExist(Exception):
+    pass
 
 
 if sqlite3:
