@@ -11,10 +11,6 @@ from peewee import logger
 from peewee import print_
 from peewee import QueryCompiler
 from peewee import SelectQuery
-try:
-    from unittest import mock
-except ImportError:
-    from tests.libs import mock
 
 
 # Register psycopg2 compatibility hooks.
@@ -74,33 +70,6 @@ class DatabaseInitializer(object):
             'sqlite': SqliteDatabase,
             'mysql': MySQLDatabase,
         }
-        try:
-            from playhouse.apsw_ext import APSWDatabase
-        except ImportError:
-            pass
-        else:
-            mapping['apsw'] = APSWDatabase
-
-        try:
-            from playhouse.berkeleydb import BerkeleyDatabase
-        except ImportError:
-            pass
-        else:
-            mapping['berkeleydb'] = BerkeleyDatabase
-
-        try:
-            from playhouse.sqlcipher_ext import SqlCipherDatabase
-        except ImportError:
-            pass
-        else:
-            mapping['sqlcipher'] = SqlCipherDatabase
-
-        try:
-            from playhouse.sqlcipher_ext import SqlCipherExtDatabase
-        except ImportError:
-            pass
-        else:
-            mapping['sqlcipher_ext'] = SqlCipherExtDatabase
 
         backend = backend or self.backend
         try:

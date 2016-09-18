@@ -7,7 +7,7 @@ env:
     - PEEWEE_TEST_BACKEND=sqlite
 
 install:
-    - pip install tox codecov
+    - pip install tox mock codecov
 
 before_script:
     - sh -c "python setup.py install"

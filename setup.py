@@ -8,7 +8,5 @@ setup(
     version='2.8.3',
     author='Charles Leifer',
     author_email='coleifer@gmail.com',
-    packages=['playhouse'],
-    py_modules=['peewee', 'pwiz'],
-    scripts=['pwiz.py'],
+    py_modules=['peewee'],
 )

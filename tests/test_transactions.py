@@ -1,10 +1,10 @@
 import threading
+import mock
 
 from peewee import _atomic
 from peewee import SqliteDatabase
 from peewee import transaction
 from tests.base import database_class
-from tests.base import mock
 from tests.base import ModelTestCase
 from tests.base import skip_if
 from tests.base import test_db
