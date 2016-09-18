@@ -42,7 +42,6 @@ try:
 except ImportError:
     OrderedDict = dict
 
-__version__ = '2.8.3'
 __all__ = [
     'BareField',
     'BigIntegerField',
