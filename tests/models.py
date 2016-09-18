@@ -101,7 +101,7 @@ class User(TestModel):
     @classmethod
     def create_users(cls, n):
         for i in range(n):
-            cls.create(username='u%d' % (i + 1))
+            cls.create(username='u{0:d}'.format((i + 1)))
 
 
 class Blog(TestModel):
@@ -112,7 +112,7 @@ class Blog(TestModel):
     pk = PrimaryKeyField()
 
     def __unicode__(self):
-        return '%s: %s' % (self.user.username, self.title)
+        return '{0!s}: {1!s}'.format(self.user.username, self.title)
 
     def prepared(self):
         self.foo = self.title

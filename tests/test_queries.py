@@ -7,7 +7,7 @@ import pytest
 from peewee import (CharField, Clause, CompositeKey, DQ, DateField,
                     DateTimeField, FloatField, ForeignKeyField, IntegerField,
                     JOIN, Model, MySQLDatabase, OperationalError, Param, Proxy,
-                    R, SQL, SqliteDatabase, TextField, Window, fn, )
+                    R, SQL, SqliteDatabase, TextField, Window, fn)
 from peewee.core import (DeleteQuery, InsertQuery, RawQuery, SelectQuery,
                          UpdateQuery, prefetch_add_subquery, strip_parens)
 from tests.base import (ModelTestCase, PeeweeTestCase, TestDatabase, TestModel,
@@ -23,30 +23,17 @@ class TestSelectQuery(PeeweeTestCase):
         sq = SelectQuery(User)
         self.assertSelect(sq, '"users"."id", "users"."username"', [])
 
-        sq = SelectQuery(Blog, Blog.pk, Blog.title, Blog.user,
-                         User.username).join(User)
-        self.assertSelect(sq,
-                          '"blog"."pk", "blog"."title", "blog"."user_id", "users"."username"',
-                          [])
+        sq = SelectQuery(Blog, Blog.pk, Blog.title, Blog.user, User.username).join(User)
+        self.assertSelect(sq, '"blog"."pk", "blog"."title", "blog"."user_id", "users"."username"', [])
 
-        sq = SelectQuery(User,
-                         fn.Lower(fn.Substr(User.username, 0, 1)).alias('lu'),
-                         fn.Count(Blog.pk)).join(Blog)
-        self.assertSelect(sq,
-                          'Lower(Substr("users"."username", ?, ?)) AS lu, Count("blog"."pk")',
-                          [0, 1])
+        sq = SelectQuery(User, fn.Lower(fn.Substr(User.username, 0, 1)).alias('lu'), fn.Count(Blog.pk)).join(Blog)
+        self.assertSelect(sq, 'Lower(Substr("users"."username", ?, ?)) AS lu, Count("blog"."pk")', [0, 1])
 
-        sq = SelectQuery(User, User.username,
-                         fn.Count(Blog.select().where(Blog.user == User.id)))
-        self.assertSelect(sq,
-                          '"users"."username", Count(SELECT "blog"."pk" FROM "blog" AS blog WHERE ("blog"."user_id" = "users"."id"))',
-                          [])
+        sq = SelectQuery(User, User.username, fn.Count(Blog.select().where(Blog.user == User.id)))
+        self.assertSelect(sq, '"users"."username", Count(SELECT "blog"."pk" FROM "blog" AS blog WHERE ("blog"."user_id" = "users"."id"))', [])
 
-        sq = SelectQuery(Package, Package, fn.Count(PackageItem.id)).join(
-            PackageItem)
-        self.assertSelect(sq,
-                          '"package"."id", "package"."barcode", Count("packageitem"."id")',
-                          [])
+        sq = SelectQuery(Package, Package, fn.Count(PackageItem.id)).join(PackageItem)
+        self.assertSelect(sq, '"package"."id", "package"."barcode", Count("packageitem"."id")', [])
 
     def test_select_distinct(self):
         sq = SelectQuery(User).distinct()
@@ -582,39 +569,27 @@ class TestSelectQuery(PeeweeTestCase):
     def test_where_chaining_collapsing(self):
         sq = SelectQuery(User).where(User.id == 1).where(User.id == 2).where(
             User.id == 3)
-        self.assertWhere(sq,
-                         '((("users"."id" = ?) AND ("users"."id" = ?)) AND ("users"."id" = ?))',
-                         [1, 2, 3])
+        self.assertWhere(sq, '((("users"."id" = ?) AND ("users"."id" = ?)) AND ("users"."id" = ?))', [1, 2, 3])
 
         sq = SelectQuery(User).where((User.id == 1) & (User.id == 2)).where(
             User.id == 3)
-        self.assertWhere(sq,
-                         '((("users"."id" = ?) AND ("users"."id" = ?)) AND ("users"."id" = ?))',
-                         [1, 2, 3])
+        self.assertWhere(sq, '((("users"."id" = ?) AND ("users"."id" = ?)) AND ("users"."id" = ?))', [1, 2, 3])
 
         sq = SelectQuery(User).where((User.id == 1) | (User.id == 2)).where(
             User.id == 3)
-        self.assertWhere(sq,
-                         '((("users"."id" = ?) OR ("users"."id" = ?)) AND ("users"."id" = ?))',
-                         [1, 2, 3])
+        self.assertWhere(sq, '((("users"."id" = ?) OR ("users"."id" = ?)) AND ("users"."id" = ?))', [1, 2, 3])
 
         sq = SelectQuery(User).where(User.id == 1).where(
             (User.id == 2) & (User.id == 3))
-        self.assertWhere(sq,
-                         '(("users"."id" = ?) AND (("users"."id" = ?) AND ("users"."id" = ?)))',
-                         [1, 2, 3])
+        self.assertWhere(sq, '(("users"."id" = ?) AND (("users"."id" = ?) AND ("users"."id" = ?)))', [1, 2, 3])
 
         sq = SelectQuery(User).where(User.id == 1).where(
             (User.id == 2) | (User.id == 3))
-        self.assertWhere(sq,
-                         '(("users"."id" = ?) AND (("users"."id" = ?) OR ("users"."id" = ?)))',
-                         [1, 2, 3])
+        self.assertWhere(sq, '(("users"."id" = ?) AND (("users"."id" = ?) OR ("users"."id" = ?)))', [1, 2, 3])
 
         sq = SelectQuery(User).where(~(User.id == 1)).where(
             User.id == 2).where(~(User.id == 3))
-        self.assertWhere(sq,
-                         '((NOT ("users"."id" = ?) AND ("users"."id" = ?)) AND NOT ("users"."id" = ?))',
-                         [1, 2, 3])
+        self.assertWhere(sq, '((NOT ("users"."id" = ?) AND ("users"."id" = ?)) AND NOT ("users"."id" = ?))', [1, 2, 3])
 
     def test_grouping(self):
         sq = SelectQuery(User).group_by(User.id)
@@ -634,9 +609,7 @@ class TestSelectQuery(PeeweeTestCase):
             User).having(
             (fn.Count(Blog.pk) > 10) | (fn.Count(Blog.pk) < 2)
         )
-        self.assertHaving(sq,
-                          '((Count("blog"."pk") > ?) OR (Count("blog"."pk") < ?))',
-                          [10, 2])
+        self.assertHaving(sq, '((Count("blog"."pk") > ?) OR (Count("blog"."pk") < ?))', [10, 2])
 
     def test_ordering(self):
         sq = SelectQuery(User).join(Blog).order_by(Blog.title)
@@ -706,9 +679,7 @@ class TestSelectQuery(PeeweeTestCase):
             +User.username,
             -Blog.title)
         self.assertOrderBy(
-            sq,
-            '"users"."username" ASC, "blog"."title" DESC',
-            [])
+            sq, '"users"."username" ASC, "blog"."title" DESC', [])
 
     def test_from_subquery(self):
         # e.g. annotate the number of blogs per user, then annotate the number
@@ -1214,7 +1185,7 @@ class TestInsertQuery(PeeweeTestCase):
     def test_insert_many_gen(self):
         def row_generator():
             for i in range(3):
-                yield {'username': 'u%s' % i}
+                yield {'username': 'u{0!s}'.format(i)}
 
         iq = InsertQuery(User, rows=row_generator())
         assert compiler.generate_insert(iq) == (
@@ -1383,7 +1354,7 @@ class TestInsertReturning(PeeweeTestCase):
         class User(self.BaseModel):
             username = CharField()
 
-        data = [{'username': 'user-%s' % i} for i in range(3)]
+        data = [{'username': 'user-{0!s}'.format(i)} for i in range(3)]
         # Bulk inserts do not ask for returned primary keys.
         self.assertInsertSQL(
             User.insert_many(data),
@@ -2016,9 +1987,9 @@ class TestDistinctOn(ModelTestCase):
 
     def test_distinct_on(self):
         for i in range(1, 4):
-            u = User.create(username='u%s' % i)
+            u = User.create(username='u{0!s}'.format(i))
             for j in range(i):
-                Blog.create(user=u, title='b-%s-%s' % (i, j))
+                Blog.create(user=u, title='b-{0!s}-{1!s}'.format(i, j))
 
         query = (Blog
                  .select(User.username, Blog.title)
@@ -2074,7 +2045,7 @@ class TestForUpdate(ModelTestCase):
 
         # select the username, it will not register as being updated
         res = new_db.execute_sql(
-            'select username from users where id = %s;' % u1.id)
+            'select username from users where id = {0!s};'.format(u1.id))
         username = res.fetchone()[0]
         assert username == 'u1'
 
@@ -2083,7 +2054,7 @@ class TestForUpdate(ModelTestCase):
 
         # now we get the update
         res = new_db.execute_sql(
-            'select username from users where id = %s;' % u1.id)
+            'select username from users where id = {0!s};'.format(u1.id))
         username = res.fetchone()[0]
         assert username == 'u1_edited'
 

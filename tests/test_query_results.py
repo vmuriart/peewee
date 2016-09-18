@@ -37,10 +37,10 @@ class TestQueryResultWrapper(ModelTestCase):
             assert names(sq[2:5]) == ['u3', 'u4', 'u5']
 
             another_iter = names(qr)
-            assert another_iter == ['u%d' % i for i in range(1, 11)]
+            assert another_iter == ['u{0:d}'.format(i) for i in range(1, 11)]
 
             another_iter = names(qr)
-            assert another_iter == ['u%d' % i for i in range(1, 11)]
+            assert another_iter == ['u{0:d}'.format(i) for i in range(1, 11)]
 
     def test_count(self):
         User.create_users(5)
@@ -118,7 +118,7 @@ class TestQueryResultWrapper(ModelTestCase):
         with self.assertQueryCount(1):
             qr = User.select().order_by(User.id).execute()
             usernames = [u.username for u in qr.iterator()]
-            assert usernames == ['u%d' % i for i in range(1, 11)]
+            assert usernames == ['u{0:d}'.format(i) for i in range(1, 11)]
 
         assert qr._populated
         assert qr._result_cache == []
@@ -138,7 +138,7 @@ class TestQueryResultWrapper(ModelTestCase):
         with self.assertQueryCount(1):
             qr = User.select().order_by(User.id)
             usernames = [u.username for u in qr.iterator()]
-            assert usernames == ['u%d' % i for i in range(1, 11)]
+            assert usernames == ['u{0:d}'.format(i) for i in range(1, 11)]
 
         with self.assertQueryCount(0):
             again = [u.username for u in qr]
@@ -149,8 +149,8 @@ class TestQueryResultWrapper(ModelTestCase):
         for i in range(1, 4):
             for j in range(i):
                 Blog.create(
-                    title='blog-%s-%s' % (i, j),
-                    user=User.get(User.username == 'u%s' % i))
+                    title='blog-{0!s}-{1!s}'.format(i, j),
+                    user=User.get(User.username == 'u{0!s}'.format(i)))
 
         qr = (User
               .select(
@@ -187,7 +187,7 @@ class TestQueryResultWrapper(ModelTestCase):
     def test_fill_cache(self):
         def assertUsernames(qr, n):
             assert [u.username for u in qr._result_cache] == \
-                   ['u%d' % i for i in range(1, n + 1)]
+                   ['u{0:d}'.format(i) for i in range(1, n + 1)]
 
         User.create_users(20)
 
@@ -335,7 +335,7 @@ class TestQueryResultWrapper(ModelTestCase):
     def test_slicing_dicing(self):
         def assertUsernames(users, nums):
             assert [u.username for u in users] == \
-                   ['u%d' % i for i in nums]
+                   ['u{0:d}'.format(i) for i in nums]
 
         User.create_users(10)
 
@@ -410,7 +410,7 @@ class TestQueryResultWrapper(ModelTestCase):
 
     def test_indexing_fill_cache(self):
         def assertUser(query_or_qr, idx):
-            assert query_or_qr[idx].username == 'u%d' % (idx + 1)
+            assert query_or_qr[idx].username == 'u{0:d}'.format((idx + 1))
 
         User.create_users(10)
         uq = User.select().order_by(User.id)
@@ -442,9 +442,10 @@ class TestQueryResultWrapper(ModelTestCase):
 
     def test_prepared(self):
         for i in range(2):
-            u = User.create(username='u%d' % i)
+            u = User.create(username='u{0:d}'.format(i))
             for j in range(2):
-                Blog.create(title='b%d-%d' % (i, j), user=u, content='')
+                Blog.create(title='b{0:d}-{1:d}'.format(i, j), user=u,
+                            content='')
 
         for u in User.select():
             # check prepared was called
@@ -627,7 +628,7 @@ class TestJoinedInstanceConstruction(ModelTestCase):
     def test_multiple_joins(self):
         Blog.delete().execute()
         User.delete().execute()
-        users = [User.create(username='u%s' % i) for i in range(4)]
+        users = [User.create(username='u{0!s}'.format(i)) for i in range(4)]
         for from_user, to_user in itertools.combinations(users, 2):
             Relationship.create(from_user=from_user, to_user=to_user)
 
@@ -680,7 +681,7 @@ class TestQueryResultTypeConversion(ModelTestCase):
     def setUp(self):
         super(TestQueryResultTypeConversion, self).setUp()
         for i in range(3):
-            User.create(username='u%d' % i)
+            User.create(username='u{0:d}'.format(i))
 
     def assertNames(self, query, expected, attr='username'):
         id_field = query.model_class.id
@@ -804,7 +805,7 @@ class TestModelQueryResultWrapper(ModelTestCase):
         u1 = User.create(username='u1')
         u2 = User.create(username='u2')
         for user in (u1, u2):
-            Blog.create(title='b-%s' % user.username, user=user)
+            Blog.create(title='b-{0!s}'.format(user.username), user=user)
 
         # Create an additional blog for user 2.
         Blog.create(title='b-u2-2', user=u2)
@@ -1033,7 +1034,7 @@ class BaseTestPrefetch(ModelTestCase):
         p2 = cc('p2', root)
         for p in (p1, p2):
             for i in range(2):
-                cc('%s-%s' % (p.name, i + 1), p)
+                cc('{0!s}-{1!s}'.format(p.name, i + 1), p)
 
 
 class TestPrefetch(BaseTestPrefetch):
@@ -1197,11 +1198,12 @@ class TestPrefetch(BaseTestPrefetch):
         u2 = User.create(username='u2')
         for i in range(1, 3):
             for user in (u1, u2):
-                b = Blog.create(user=user, title='%s-b%s' % (user.username, i))
+                b = Blog.create(user=user,
+                                title='{0!s}-b{1!s}'.format(user.username, i))
                 SpecialComment.create(
                     user=user,
                     blog=b,
-                    name='%s-c%s' % (user.username, i))
+                    name='{0!s}-c{1!s}'.format(user.username, i))
 
         u3 = User.create(username='u3')
         SpecialComment.create(user=u3, name='u3-c1')
@@ -1886,7 +1888,7 @@ class TestAggregateRowsRegression(ModelTestCase):
     def test_regression_506(self):
         user = User.create(username='u2')
         for i in range(2):
-            Blog.create(title='u2-%s' % i, user=user)
+            Blog.create(title='u2-{0!s}'.format(i), user=user)
 
         users = (User
                  .select()

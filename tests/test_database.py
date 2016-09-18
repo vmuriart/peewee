@@ -45,7 +45,7 @@ class TestMultiThreadedQueries(ModelTestCase):
     def test_multiple_writers(self):
         def create_user_thread(low, hi):
             for i in range(low, hi):
-                User.create(username='u%d' % i)
+                User.create(username='u{0:d}'.format(i))
             User._meta.database.close()
 
         threads = []
@@ -197,7 +197,8 @@ class TestDroppingIndex(ModelTestCase):
 
         assert sorted(query_log.queries) == sorted([
                                                        (
-                                                           'DROP INDEX "%s"' % idx.name,
+                                                           'DROP INDEX "{0!s}"'.format(
+                                                               idx.name),
                                                            []) for idx in
                                                        indexes])
         assert db.get_indexes(IndexedModel._meta.db_table) == []
@@ -329,7 +330,7 @@ class TestOuterLoopInnerCommit(ModelTestCase):
             User.create(username=username)
 
         for user in User.select():
-            Blog.create(user=user, title='b-%s' % user.username)
+            Blog.create(user=user, title='b-{0!s}'.format(user.username))
 
         # These statements are auto-committed.
         new_db = self.new_connection()
@@ -347,7 +348,7 @@ class TestOuterLoopInnerCommit(ModelTestCase):
         test_db.begin()
 
         for user in User.select():
-            Blog.create(user=user, title='b-%s' % user.username)
+            Blog.create(user=user, title='b-{0!s}'.format(user.username))
 
         # These statements have not been committed.
         new_db = self.new_connection()

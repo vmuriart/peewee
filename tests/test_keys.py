@@ -24,7 +24,7 @@ class TestForeignKeyToNonPrimaryKey(ModelTestCase):
             for i in range(2):
                 PackageItem.create(
                     package=barcode,
-                    title='%s-%s' % (barcode, i))
+                    title='{0!s}-{1!s}'.format(barcode, i))
 
     def test_fk_resolution(self):
         pi = PackageItem.get(PackageItem.title == '101-0')
@@ -174,8 +174,8 @@ class TestCompositePrimaryKey(ModelTestCase):
 
     def setUp(self):
         super(TestCompositePrimaryKey, self).setUp()
-        tags = [Tag.create(tag='t%d' % i) for i in range(1, 4)]
-        posts = [Post.create(title='p%d' % i) for i in range(1, 4)]
+        tags = [Tag.create(tag='t{0:d}'.format(i)) for i in range(1, 4)]
+        posts = [Post.create(title='p{0:d}'.format(i)) for i in range(1, 4)]
         p12 = Post.create(title='p12')
         for t, p in zip(tags, posts):
             TagPostThrough.create(tag=t, post=p)
@@ -282,7 +282,7 @@ class TestCompositePrimaryKey(ModelTestCase):
             (CKM.f2 == 3)).exists()
 
     def test_delete_instance(self):
-        u1, u2 = [User.create(username='u%s' % i) for i in range(2)]
+        u1, u2 = [User.create(username='u{0!s}'.format(i)) for i in range(2)]
         ut1 = UserThing.create(thing='t1', user=u1)
         ut2 = UserThing.create(thing='t2', user=u1)
         ut3 = UserThing.create(thing='t1', user=u2)
@@ -442,7 +442,7 @@ class TestForeignKeyConstraints(ModelTestCase):
             return
 
         state = 'on' if is_enabled else 'off'
-        test_db.execute_sql('PRAGMA foreign_keys = %s' % state)
+        test_db.execute_sql('PRAGMA foreign_keys = {0!s}'.format(state))
 
     def test_constraint_exists(self):
         # IntegrityError is raised when we specify a non-existent user_id.
