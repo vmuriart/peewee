@@ -105,31 +105,31 @@ def collect_modules(options):
     xtra = lambda op: op or options.extra or options.all
     if xtra(options.apsw):
         try:
-            from playhouse.tests import test_apsw
+            from tests import test_apsw
             modules.append(test_apsw)
         except ImportError:
             print_('Unable to import apsw tests, skipping')
     if xtra(options.berkeleydb):
         try:
-            from playhouse.tests import test_berkeleydb
+            from tests import test_berkeleydb
             modules.append(test_berkeleydb)
         except ImportError:
             print_('Unable to import berkeleydb tests, skipping')
     if xtra(options.csv):
-        from playhouse.tests import test_csv_utils
+        from tests import test_csv_utils
         modules.append(test_csv_utils)
     if xtra(options.dataset):
-        from playhouse.tests import test_dataset
+        from tests import test_dataset
         modules.append(test_dataset)
     if xtra(options.db_url):
-        from playhouse.tests import test_db_url
+        from tests import test_db_url
         modules.append(test_db_url)
     if xtra(options.djpeewee):
-        from playhouse.tests import test_djpeewee
+        from tests import test_djpeewee
         modules.append(test_djpeewee)
     if xtra(options.fields):
-        from playhouse.tests import test_extra_fields
-        from playhouse.tests import test_manytomany
+        from tests import test_extra_fields
+        from tests import test_manytomany
         modules.append(test_extra_fields)
         if test_manytomany not in modules:
             modules.append(test_manytomany)
@@ -139,85 +139,85 @@ def collect_modules(options):
         except ImportError:
             print_('Unable to import Flask tests, Flask is not installed.')
         else:
-            from playhouse.tests import test_flask_utils
+            from tests import test_flask_utils
             modules.append(test_flask_utils)
     if xtra(options.gfk):
-        from playhouse.tests import test_gfk
+        from tests import test_gfk
         modules.append(test_gfk)
     if xtra(options.hybrid):
-        from playhouse.tests import test_hybrid
+        from tests import test_hybrid
         modules.append(test_hybrid)
     if xtra(options.kv):
-        from playhouse.tests import test_kv
+        from tests import test_kv
         modules.append(test_kv)
     if xtra(options.manytomany):
-        from playhouse.tests import test_manytomany
+        from tests import test_manytomany
         if test_manytomany not in modules:
             modules.append(test_manytomany)
     if xtra(options.migrations):
         try:
-            from playhouse.tests import test_migrate
+            from tests import test_migrate
             modules.append(test_migrate)
         except ImportError:
             print_('Unable to import migration tests, skipping')
     if xtra(options.pool):
         try:
-            from playhouse.tests import test_pool
+            from tests import test_pool
             modules.append(test_pool)
         except ImportError:
             print_('Unable to import connection pool tests, skipping')
     if xtra(options.postgres_ext):
         try:
-            from playhouse.tests import test_postgres
+            from tests import test_postgres
             modules.append(test_postgres)
         except ImportError:
             print_('Unable to import postgres-ext tests, skipping')
     if xtra(options.pwiz):
-        from playhouse.tests import test_pwiz
+        from tests import test_pwiz
         modules.append(test_pwiz)
     if xtra(options.read_slave):
-        from playhouse.tests import test_read_slave
+        from tests import test_read_slave
         modules.append(test_read_slave)
     if xtra(options.reflection):
-        from playhouse.tests import test_reflection
+        from tests import test_reflection
         modules.append(test_reflection)
     if xtra(options.signals):
-        from playhouse.tests import test_signals
+        from tests import test_signals
         modules.append(test_signals)
     if xtra(options.shortcuts):
-        from playhouse.tests import test_shortcuts
+        from tests import test_shortcuts
         modules.append(test_shortcuts)
     if xtra(options.speedups):
         try:
-            from playhouse.tests import test_speedups
+            from tests import test_speedups
             modules.append(test_speedups)
         except ImportError:
             print_('Unable to import speedups tests, skipping')
     if xtra(options.sqlcipher):
         try:
-            from playhouse.tests import test_sqlcipher_ext
+            from tests import test_sqlcipher_ext
             modules.append(test_sqlcipher_ext)
         except ImportError:
             print_('Unable to import pysqlcipher tests, skipping')
     if xtra(options.sqlite_c):
         try:
-            from playhouse.tests import test_sqlite_c_ext
+            from tests import test_sqlite_c_ext
             modules.append(test_sqlite_c_ext)
         except ImportError:
             print_('Unable to import SQLite C extension tests, skipping')
     if xtra(options.sqlite_ext):
-        from playhouse.tests import test_sqlite_ext
+        from tests import test_sqlite_ext
         modules.append(test_sqlite_ext)
     if xtra(options.sqlite_udf):
-        from playhouse.tests import test_sqlite_udf
+        from tests import test_sqlite_udf
         modules.append(test_sqlite_udf)
     if xtra(options.test_utils):
-        from playhouse.tests import test_test_utils
+        from tests import test_test_utils
         modules.append(test_test_utils)
 
     if not modules or options.all:
-        import tests
-        modules.insert(0, tests)
+        import tests_core
+        modules.insert(0, tests_core)
     return modules
 
 
