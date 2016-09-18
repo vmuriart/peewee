@@ -69,33 +69,33 @@ class TestMultipleForeignKey(ModelTestCase):
         ProcessorMf = Manufacturer.alias()
         query = (Computer
                  .select(
-                     Computer,
-                     HDD,
-                     Memory,
-                     Processor,
-                     HDDMf,
-                     MemoryMf,
-                     ProcessorMf)
+            Computer,
+            HDD,
+            Memory,
+            Processor,
+            HDDMf,
+            MemoryMf,
+            ProcessorMf)
                  .join(HDD, on=(
-                     Computer.hard_drive == HDD.id).alias('hard_drive'))
+            Computer.hard_drive == HDD.id).alias('hard_drive'))
                  .join(
-                     HDDMf,
-                     JOIN.LEFT_OUTER,
-                     on=(HDD.manufacturer == HDDMf.id))
+            HDDMf,
+            JOIN.LEFT_OUTER,
+            on=(HDD.manufacturer == HDDMf.id))
                  .switch(Computer)
                  .join(Memory, on=(
-                     Computer.memory == Memory.id).alias('memory'))
+            Computer.memory == Memory.id).alias('memory'))
                  .join(
-                     MemoryMf,
-                     JOIN.LEFT_OUTER,
-                     on=(Memory.manufacturer == MemoryMf.id))
+            MemoryMf,
+            JOIN.LEFT_OUTER,
+            on=(Memory.manufacturer == MemoryMf.id))
                  .switch(Computer)
                  .join(Processor, on=(
-                     Computer.processor == Processor.id).alias('processor'))
+            Computer.processor == Processor.id).alias('processor'))
                  .join(
-                     ProcessorMf,
-                     JOIN.LEFT_OUTER,
-                     on=(Processor.manufacturer == ProcessorMf.id))
+            ProcessorMf,
+            JOIN.LEFT_OUTER,
+            on=(Processor.manufacturer == ProcessorMf.id))
                  .order_by(Computer.id))
 
         with self.assertQueryCount(1):
@@ -330,7 +330,7 @@ class TestForeignKeyNonPrimaryKeyCreateTable(PeeweeTestCase):
 
 
 class TestDeferredForeignKey(ModelTestCase):
-    #requires = [Language, Snippet]
+    # requires = [Language, Snippet]
 
     def setUp(self):
         super(TestDeferredForeignKey, self).setUp()
@@ -412,12 +412,15 @@ class TestSQLiteDeferredForeignKey(PeeweeTestCase):
         class Base(Model):
             class Meta:
                 database = db
+
         class User(Base):
             username = CharField()
             favorite_tweet = ForeignKeyField(TweetDeferred, null=True)
+
         class Tweet(Base):
             user = ForeignKeyField(User)
             message = TextField()
+
         TweetDeferred.set_model(Tweet)
         with db.transaction():
             User.create_table()

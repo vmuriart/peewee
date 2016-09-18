@@ -160,7 +160,7 @@ else:
 if PY26:
     _M = 10 ** 6
     total_seconds = lambda t: (t.microseconds + 0.0 + (
-    t.seconds + t.days * 24 * 3600) * _M) / _M
+        t.seconds + t.days * 24 * 3600) * _M) / _M
 else:
     total_seconds = lambda t: t.total_seconds()
 

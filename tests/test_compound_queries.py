@@ -3,6 +3,7 @@
 import itertools
 import operator
 import sys
+
 if sys.version_info[0] != 3:
     from functools import reduce
 from functools import wraps
@@ -19,16 +20,20 @@ from tests.models import *
 
 compound_db = database_initializer.get_in_memory_database()
 
+
 class CompoundBase(Model):
     class Meta:
         database = compound_db
 
+
 class Alpha(CompoundBase):
     alpha = IntegerField()
+
 
 class Beta(CompoundBase):
     beta = IntegerField()
     other = IntegerField(default=0)
+
 
 class Gamma(CompoundBase):
     gamma = IntegerField()
@@ -227,7 +232,9 @@ class TestCompoundSelectQueries(ModelTestCase):
                 else:
                     log_console('"%s" not supported, skipping %s' %
                                 (op, fn.__name__))
+
             return inner
+
         return decorator
 
     def assertValues(self, query, expected):

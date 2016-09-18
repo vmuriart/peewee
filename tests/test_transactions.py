@@ -166,7 +166,7 @@ class TestTransaction(ModelTestCase):
         @test_db.commit_on_success
         def will_fail():
             User.create(username='u1')
-            Blog.create() # no blog, will raise an error
+            Blog.create()  # no blog, will raise an error
 
         self.assertRaises(IntegrityError, will_fail)
         self.assertEqual(User.select().count(), 0)
@@ -185,7 +185,7 @@ class TestTransaction(ModelTestCase):
         def do_will_fail():
             with test_db.transaction():
                 User.create(username='u1')
-                Blog.create() # no blog, will raise an error
+                Blog.create()  # no blog, will raise an error
 
         self.assertRaises(IntegrityError, do_will_fail)
         self.assertEqual(Blog.select().count(), 0)
@@ -355,6 +355,7 @@ class TestAutoRollback(ModelTestCase):
 
     def test_transaction_ctx_mgr(self):
         'Only auto-rollback when autocommit is enabled.'
+
         def create_error():
             self.assertRaises(IntegrityError, Blog.create)
 
@@ -439,6 +440,7 @@ class TestSavepoints(ModelTestCase):
             self.assertRaises(
                 ValueError, self._outer, fail_outer=True, fail_inner=True)
             self.assertEqual(User.select().count(), 0)
+
 
 class TestAtomic(ModelTestCase):
     requires = [User, UniqueModel]

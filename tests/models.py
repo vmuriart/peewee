@@ -7,7 +7,6 @@ from peewee import *
 from tests.base import TestModel
 from tests.base import test_db
 
-
 if sys.version_info[0] == 3:
     long = int
 
@@ -197,6 +196,7 @@ class CSVRow(TestModel):
 class BlobModel(TestModel):
     data = BlobField()
 
+
 class Job(TestModel):
     name = CharField()
 
@@ -285,6 +285,7 @@ class CheckModel(TestModel):
 # Deferred foreign keys.
 SnippetDeferred = DeferredRelation()
 
+
 class Language(TestModel):
     name = CharField()
     selected_snippet = ForeignKeyField(SnippetDeferred, null=True)
@@ -293,6 +294,7 @@ class Language(TestModel):
 class Snippet(TestModel):
     code = TextField()
     language = ForeignKeyField(Language, related_name='snippets')
+
 
 SnippetDeferred.set_model(Snippet)
 
@@ -304,6 +306,7 @@ class _UpperField(CharField):
 
 class UpperUser(TestModel):
     username = _UpperField()
+
     class Meta:
         db_table = User._meta.db_table
 
@@ -322,6 +325,7 @@ class PackageItem(TestModel):
 
 class PGSchema(TestModel):
     data = CharField()
+
     class Meta:
         schema = 'huey'
 
@@ -337,6 +341,7 @@ class UpperCharField(CharField):
 class UpperModel(TestModel):
     data = UpperCharField()
 
+
 class CommentCategory(TestModel):
     category = ForeignKeyField(Category)
     comment = ForeignKeyField(Comment)
@@ -345,13 +350,16 @@ class CommentCategory(TestModel):
     class Meta:
         primary_key = CompositeKey('comment', 'category')
 
+
 class BlogData(TestModel):
     blog = ForeignKeyField(Blog)
+
 
 class ServerDefaultModel(TestModel):
     name = CharField(constraints=[SQL("DEFAULT 'foo'")])
     timestamp = DateTimeField(constraints=[
         SQL('DEFAULT CURRENT_TIMESTAMP')])
+
 
 class SpecialComment(TestModel):
     user = ForeignKeyField(User, related_name='special_comments')
@@ -365,15 +373,19 @@ class EmptyModel(TestModel):
 
 class NoPKModel(TestModel):
     data = TextField()
+
     class Meta:
         primary_key = False
+
 
 class TestingID(TestModel):
     uniq = UUIDField()
 
+
 class UUIDData(TestModel):
     id = UUIDField(primary_key=True)
     data = CharField()
+
 
 class UUIDRelatedModel(TestModel):
     data = ForeignKeyField(UUIDData, null=True, related_name='related_models')
@@ -389,22 +401,28 @@ class UInt32Field(Field):
     def python_value(self, value):
         return long(value + (1 << 31))
 
+
 class UIntModel(TestModel):
     data = UInt32Field()
 
+
 class UIntRelModel(TestModel):
     uint_model = ForeignKeyField(UIntModel, to_field='data')
+
 
 class Note(TestModel):
     user = ForeignKeyField(User, related_name='notes')
     text = TextField()
 
+
 class Flag(TestModel):
     label = TextField()
+
 
 class NoteFlag(TestModel):
     note = ForeignKeyField(Note, related_name='flags')
     flag = ForeignKeyField(Flag, related_name='notes')
+
 
 class NoteFlagNullable(TestModel):
     note = ForeignKeyField(Note, null=True, related_name='nullable_flags')

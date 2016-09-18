@@ -36,12 +36,18 @@ class TestHelperMethods(PeeweeTestCase):
 class TestTopologicalSorting(PeeweeTestCase):
     def test_topological_sort_fundamentals(self):
         FKF = ForeignKeyField
+
         # we will be topo-sorting the following models
         class A(Model): pass
-        class B(Model): a = FKF(A)              # must follow A
-        class C(Model): a, b = FKF(A), FKF(B)   # must follow A and B
-        class D(Model): c = FKF(C)              # must follow A and B and C
+
+        class B(Model): a = FKF(A)  # must follow A
+
+        class C(Model): a, b = FKF(A), FKF(B)  # must follow A and B
+
+        class D(Model): c = FKF(C)  # must follow A and B and C
+
         class E(Model): e = FKF('self')
+
         # but excluding this model, which is a child of E
         class Excluded(Model): e = FKF(E)
 
@@ -60,6 +66,7 @@ class TestTopologicalSorting(PeeweeTestCase):
         def assert_precedes(X, Y):
             lhs, rhs = map(output_ordering.index, [X, Y])
             self.assertTrue(lhs < rhs)
+
         assert_precedes(A, B)
         assert_precedes(B, C)  # if true, C follows A by transitivity
         assert_precedes(C, D)  # if true, D follows A and B by transitivity
@@ -75,6 +82,7 @@ def permutations(xs):
         for y, ys in selections(xs):
             for pys in permutations(ys):
                 yield [y] + pys
+
 
 def selections(xs):
     for i in range(len(xs)):

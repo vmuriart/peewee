@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 
 import datetime
+from functools import wraps
+from hashlib import md5
 
 from flask import Flask
 from flask import g
@@ -8,8 +10,7 @@ from flask import redirect
 from flask import request
 from flask import session
 from flask import url_for, abort, render_template, flash
-from functools import wraps
-from hashlib import md5
+
 from peewee import *
 
 # config - aside from our database, the rest is for use by Flask
@@ -26,13 +27,15 @@ app.config.from_object(__name__)
 # persist information
 database = SqliteDatabase(DATABASE)
 
+
 # model definitions -- the standard "pattern" is to define a base model class
-# that specifies which database to use.  then, any subclasses will automatically
-# use the correct storage. for more information, see:
-# http://charlesleifer.com/docs/peewee/peewee/models.html#model-api-smells-like-django
+# that specifies which database to use.  then, any subclasses will
+# automatically use the correct storage. for more information, see:
+# charlesleifer.com/docs/peewee/peewee/models.html#model-api-smells-like-django
 class BaseModel(Model):
     class Meta:
         database = database
+
 
 # the user model specifies its fields (or columns) declaratively, like django
 class User(BaseModel):
@@ -65,7 +68,8 @@ class User(BaseModel):
 
     def gravatar_url(self, size=80):
         return 'http://www.gravatar.com/avatar/%s?d=identicon&s=%d' % \
-            (md5(self.email.strip().lower().encode('utf-8')).hexdigest(), size)
+               (md5(self.email.strip().lower().encode('utf-8')).hexdigest(),
+                size)
 
 
 # this model contains two foreign keys to user -- it essentially allows us to
@@ -83,9 +87,9 @@ class Relationship(BaseModel):
         )
 
 
-# a dead simple one-to-many relationship: one user has 0..n messages, exposed by
-# the foreign key.  because we didn't specify, a users messages will be accessible
-# as a special attribute, User.message_set
+# a dead simple one-to-many relationship: one user has 0..n messages, exposed
+# by the foreign key.  because we didn't specify, a users messages will be
+# accessible as a special attribute, User.message_set
 class Message(BaseModel):
     user = ForeignKeyField(User)
     content = TextField()
@@ -100,19 +104,22 @@ def create_tables():
     database.connect()
     database.create_tables([User, Relationship, Message])
 
-# flask provides a "session" object, which allows us to store information across
-# requests (stored by default in a secure cookie).  this function allows us to
-# mark a user as being logged-in by setting some values in the session data:
+
+# flask provides a "session" object, which allows us to store information
+# across requests (stored by default in a secure cookie).  this function allows
+# us to mark a user as being logged-in by setting values in the session data:
 def auth_user(user):
     session['logged_in'] = True
     session['user_id'] = user.id
     session['username'] = user.username
     flash('You are logged in as %s' % (user.username))
 
+
 # get the user from the session
 def get_current_user():
     if session.get('logged_in'):
         return User.get(User.id == session['user_id'])
+
 
 # view decorator which indicates that the requesting user must be authenticated
 # before they can access the view.  it checks the session to see if they're
@@ -123,7 +130,9 @@ def login_required(f):
         if not session.get('logged_in'):
             return redirect(url_for('login'))
         return f(*args, **kwargs)
+
     return inner
+
 
 # given a template and a SelectQuery instance, render a paginated list of
 # objects from the query inside the template
@@ -135,6 +144,7 @@ def object_list(template_name, qr, var_name='object_list', **kwargs):
     kwargs[var_name] = qr.paginate(kwargs['page'])
     return render_template(template_name, **kwargs)
 
+
 # retrieve a single object matching the specified query or 404 -- this uses the
 # shortcut "get" method on model, which retrieves a single object or raises a
 # DoesNotExist exception if no matching object exists
@@ -145,6 +155,7 @@ def get_object_or_404(model, *expressions):
     except model.DoesNotExist:
         abort(404)
 
+
 # custom template filter -- flask allows you to define these functions and then
 # they are accessible in the template -- this one returns a boolean whether the
 # given user is following another user.
@@ -152,17 +163,20 @@ def get_object_or_404(model, *expressions):
 def is_following(from_user, to_user):
     return from_user.is_following(to_user)
 
-# Request handlers -- these two hooks are provided by flask and we will use them
-# to create and tear down a database connection on each request.
+
+# Request handlers -- these two hooks are provided by flask and we will use
+# them to create and tear down a database connection on each request.
 @app.before_request
 def before_request():
     g.db = database
     g.db.connect()
 
+
 @app.after_request
 def after_request(response):
     g.db.close()
     return response
+
 
 # views -- these are the actual mappings of url to view function
 @app.route('/')
@@ -174,14 +188,16 @@ def homepage():
     else:
         return public_timeline()
 
+
 @app.route('/private/')
 def private_timeline():
-    # the private timeline exemplifies the use of a subquery -- we are asking for
-    # messages where the person who created the message is someone the current
-    # user is following.  these messages are then ordered newest-first.
+    # the private timeline exemplifies the use of a subquery -- we are asking
+    # for messages where the person who created the message is someone the
+    # current user is following.  these messages are then ordered newest-first.
     user = get_current_user()
     messages = Message.select().where(Message.user << user.following())
     return object_list('private_messages.html', messages, 'message_list')
+
 
 @app.route('/public/')
 def public_timeline():
@@ -189,20 +205,22 @@ def public_timeline():
     messages = Message.select()
     return object_list('public_messages.html', messages, 'message_list')
 
+
 @app.route('/join/', methods=['GET', 'POST'])
 def join():
     if request.method == 'POST' and request.form['username']:
         try:
             with database.transaction():
-                # Attempt to create the user. If the username is taken, due to the
+                # Attempt to create the user. If the username is taken, due to
                 # unique constraint, the database will raise an IntegrityError.
                 user = User.create(
                     username=request.form['username'],
-                    password=md5((request.form['password']).encode('utf-8')).hexdigest(),
+                    password=md5((request.form['password']).encode(
+                        'utf-8')).hexdigest(),
                     email=request.form['email'],
                     join_date=datetime.datetime.now())
 
-            # mark the user as being 'authenticated' by setting the session vars
+            # mark the user as being 'authenticated' by setting the session var
             auth_user(user)
             return redirect(url_for('homepage'))
 
@@ -211,13 +229,15 @@ def join():
 
     return render_template('join.html')
 
+
 @app.route('/login/', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST' and request.form['username']:
         try:
             user = User.get(
                 username=request.form['username'],
-                password=md5((request.form['password']).encode('utf-8')).hexdigest())
+                password=md5(
+                    (request.form['password']).encode('utf-8')).hexdigest())
         except User.DoesNotExist:
             flash('The password entered is incorrect')
         else:
@@ -226,11 +246,13 @@ def login():
 
     return render_template('login.html')
 
+
 @app.route('/logout/')
 def logout():
     session.pop('logged_in', None)
     flash('You were logged out')
     return redirect(url_for('homepage'))
+
 
 @app.route('/following/')
 @login_required
@@ -238,16 +260,19 @@ def following():
     user = get_current_user()
     return object_list('user_following.html', user.following(), 'user_list')
 
+
 @app.route('/followers/')
 @login_required
 def followers():
     user = get_current_user()
     return object_list('user_followers.html', user.followers(), 'user_list')
 
+
 @app.route('/users/')
 def user_list():
     users = User.select()
     return object_list('user_list.html', users, 'user_list')
+
 
 @app.route('/users/<username>/')
 def user_detail(username):
@@ -255,11 +280,12 @@ def user_detail(username):
     # username or short-circuit and display a 404 if no user exists in the db
     user = get_object_or_404(User, User.username == username)
 
-    # get all the users messages ordered newest-first -- note how we're accessing
+    # get all the users messages ordered new-first -- note how we're accessing
     # the messages -- user.message_set.  could also have written it as:
     # Message.select().where(user=user).order_by(('pub_date', 'desc'))
     messages = user.message_set
     return object_list('user_detail.html', messages, 'message_list', user=user)
+
 
 @app.route('/users/<username>/follow/', methods=['POST'])
 @login_required
@@ -276,6 +302,7 @@ def user_follow(username):
     flash('You are following %s' % user.username)
     return redirect(url_for('user_detail', username=user.username))
 
+
 @app.route('/users/<username>/unfollow/', methods=['POST'])
 @login_required
 def user_unfollow(username):
@@ -286,6 +313,7 @@ def user_unfollow(username):
     ).execute()
     flash('You are no longer following %s' % user.username)
     return redirect(url_for('user_detail', username=user.username))
+
 
 @app.route('/create/', methods=['GET', 'POST'])
 @login_required
@@ -301,9 +329,11 @@ def create():
 
     return render_template('create.html')
 
+
 @app.context_processor
 def _inject_user():
     return {'current_user': get_current_user()}
+
 
 # allow running from the command line
 if __name__ == '__main__':
