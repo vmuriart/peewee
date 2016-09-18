@@ -1,27 +1,15 @@
 # -*- coding: utf-8 -*-
 
+from __future__ import print_function
+
 import logging
 import os
-import sys
 from contextlib import contextmanager
 from functools import wraps
 from unittest import TestCase
 
 from peewee import Model, SqliteDatabase
 from peewee.core import AliasMap, QueryCompiler, SelectQuery, logger
-from peewee._compat import print_
-
-# Python 2/3 compatibility.
-if sys.version_info[0] < 3:
-    import codecs
-
-    ulit = lambda s: codecs.unicode_escape_decode(s)[0]
-    binary_construct = buffer
-    binary_types = buffer
-else:
-    ulit = lambda s: s
-    binary_construct = lambda s: bytes(s.encode('raw_unicode_escape'))
-    binary_types = (bytes, memoryview)
 
 TEST_BACKEND = os.environ.get('PEEWEE_TEST_BACKEND') or 'sqlite'
 TEST_DATABASE = os.environ.get('PEEWEE_TEST_DATABASE') or 'peewee_test'
@@ -54,8 +42,8 @@ class DatabaseInitializer(object):
         try:
             return mapping[backend]
         except KeyError:
-            print_('Unrecognized database: "{0!s}".'.format(backend))
-            print_('Available choices:\n{0!s}'.format('\n'.join(
+            print('Unrecognized database: "{0!s}".'.format(backend))
+            print('Available choices:\n{0!s}'.format('\n'.join(
                 sorted(mapping.keys()))))
             raise
 
@@ -246,7 +234,7 @@ def skip_if(expression):
     def decorator(klass):
         if expression():
             if TEST_VERBOSITY > 0:
-                print_('Skipping {0!s} tests.'.format(klass.__name__))
+                print('Skipping {0!s} tests.'.format(klass.__name__))
 
             class Dummy(object):
                 pass
@@ -269,7 +257,7 @@ def skip_test_if(expression):
         def inner(*args, **kwargs):
             if expression():
                 if TEST_VERBOSITY > 1:
-                    print_('Skipping {0!s} test.'.format(fn.__name__))
+                    print('Skipping {0!s} test.'.format(fn.__name__))
             else:
                 return fn(*args, **kwargs)
 
@@ -284,7 +272,7 @@ def skip_test_unless(expression):
 
 def log_console(s):
     if TEST_VERBOSITY > 1:
-        print_(s)
+        print(s)
 
 
 class QueryLogger(object):

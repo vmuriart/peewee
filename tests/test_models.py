@@ -10,8 +10,9 @@ from peewee import (CharField, DateTimeField, Field,
                     ForeignKeyField, IntegerField, IntegrityError, JOIN, Model,
                     R, SQL, SqliteDatabase, TextField, fn, prefetch)
 from peewee.core import ModelOptions
+from peewee._compat import ulit
 from tests.base import (ModelTestCase, PeeweeTestCase, TestModel, compiler,
-                        database_initializer, normal_compiler, test_db, ulit)
+                        database_initializer, normal_compiler, test_db)
 from tests.models import (Blog, BlogTwo, Category, Child, ChildNullableData,
                           ChildPet, Comment, EmptyModel, Flag, NoPKModel,
                           NonIntModel, Note, NoteFlagNullable, OrderedModel,

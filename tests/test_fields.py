@@ -12,9 +12,9 @@ import pytest
 from peewee import (BlobField, DateField, DateTimeField, DecimalField,
                     IntegrityError, Model, Proxy,
                     SqliteDatabase, TimeField, fn, prefetch)
-from peewee.core import binary_construct, sqlite3
+from peewee.core import sqlite3
+from peewee._compat import binary_construct, binary_types
 from tests.base import (ModelTestCase, PeeweeTestCase, TestModel,
-                        binary_construct, binary_types,
                         skip_test_if, skip_unless, test_db)
 from tests.models import (BlobModel, Blog, CheckModel, DBBlog, DBUser,
                           JERRelated, Job, JobExecutionRecord, MultiIndexModel,

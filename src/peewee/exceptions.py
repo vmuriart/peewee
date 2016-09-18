@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from peewee._compat import PY26, reraise
+from peewee._compat import reraise
 
 
 class DoesNotExist(Exception):
@@ -61,8 +61,6 @@ class ExceptionWrapper(object):
             return
         if exc_type.__name__ in self.exceptions:
             new_type = self.exceptions[exc_type.__name__]
-            if PY26:
-                exc_args = exc_value
-            else:
-                exc_args = exc_value.args
+
+            exc_args = exc_value.args
             reraise(new_type, new_type(*exc_args), traceback)

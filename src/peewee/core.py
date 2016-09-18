@@ -36,7 +36,7 @@ from copy import deepcopy
 from functools import wraps
 from inspect import isclass
 
-from peewee._compat import (PY3, _METACLASS_, basestring, binary_construct,
+from peewee._compat import (_METACLASS_, basestring, binary_construct,
                             callable, long, reduce, string_type, unicode_type,
                             with_metaclass)
 from peewee.exceptions import (DataError, DatabaseError, DoesNotExist,
@@ -3196,9 +3196,8 @@ class SelectQuery(Query):
     def __len__(self):
         return len(self.execute())
 
-    if PY3:
-        def __hash__(self):
-            return id(self)
+    def __hash__(self):
+        return id(self)
 
 
 class NoopSelectQuery(SelectQuery):
