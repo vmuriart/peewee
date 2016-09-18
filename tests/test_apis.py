@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 from peewee import Node
 from peewee import *
 from tests.base import PeeweeTestCase

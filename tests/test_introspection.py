@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 from tests.base import database_class
 from tests.base import ModelTestCase
 from tests.base import test_db

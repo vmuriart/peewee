@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 from peewee import DeleteQuery
 from peewee import InsertQuery
 from peewee import prefetch_add_subquery

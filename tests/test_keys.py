@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 from peewee import DeferredRelation
 from peewee import Model
 from peewee import SqliteDatabase
