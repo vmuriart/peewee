@@ -5,7 +5,7 @@ from distutils.core import setup
 from distutils.extension import Extension
 from distutils.version import StrictVersion
 
-f = open(os.path.join(os.path.dirname(__file__), 'README.rst'))
+f = open(os.path.join(os.path.dirname(__file__), 'README.md'))
 readme = f.read()
 f.close()
 

@@ -1,7 +1,4 @@
-.. image:: http://media.charlesleifer.com/blog/photos/p1423749536.32.png
-
-peewee
-======
+# peewee
 
 Peewee is a simple and small ORM. It has few (but expressive) concepts, making it easy to learn and intuitive to use.
 
@@ -17,9 +14,6 @@ Peewee is a simple and small ORM. It has few (but expressive) concepts, making i
   * `Encryption <http://docs.peewee-orm.com/en/latest/peewee/playhouse.html#sqlcipher-ext>`_
   * `and much, much more... <http://docs.peewee-orm.com/en/latest/peewee/playhouse.html>`_
 
-.. image:: https://api.travis-ci.org/coleifer/peewee.png?branch=master
-  :target: https://travis-ci.org/coleifer/peewee
-
 New to peewee? Here is a list of documents you might find most helpful when getting
 started:
 
@@ -29,12 +23,11 @@ started:
 
 For flask helpers, check out the `flask_utils extension module <http://docs.peewee-orm.com/en/latest/peewee/playhouse.html#flask-utils>`_. You can also use peewee with the popular extension `flask-admin <https://flask-admin.readthedocs.io/en/latest/>`_ to provide a Django-like admin interface for managing peewee models.
 
-Examples
---------
+## Examples
 
 Defining models is similar to Django or SQLAlchemy:
 
-.. code-block:: python
+```python
 
     from peewee import *
     from playhouse.sqlite_ext import SqliteExtDatabase
@@ -54,17 +47,18 @@ Defining models is similar to Django or SQLAlchemy:
         message = TextField()
         created_date = DateTimeField(default=datetime.datetime.now)
         is_published = BooleanField(default=True)
+```
 
 Connect to the database and create tables:
 
-.. code-block:: python
-
+```python
     db.connect()
     db.create_tables([User, Tweet])
+```
 
 Create a few rows:
 
-.. code-block:: python
+```python
 
     charlie = User.create(username='charlie')
     huey = User(username='huey')
@@ -73,10 +67,11 @@ Create a few rows:
     # No need to set `is_published` or `created_date` since they
     # will just use the default values we specified.
     Tweet.create(user=charlie, message='My first tweet')
+```
 
 Queries are expressive and composable:
 
-.. code-block:: python
+```python
 
     # A simple query selecting a user.
     User.get(User.username == 'charles')
@@ -115,18 +110,18 @@ Queries are expressive and composable:
     # Do an atomic update
     Counter.update(count=Counter.count + 1).where(
         Counter.url == request.url)
+```
 
 Check out the `example app <http://docs.peewee-orm.com/en/latest/peewee/example.html>`_ for a working Twitter-clone website written with Flask.
 
-Learning more
--------------
+## Learning more
 
 Check the `documentation <http://docs.peewee-orm.com/>`_ for more examples.
 
 Specific question? Come hang out in the #peewee channel on irc.freenode.net, or post to the mailing list, http://groups.google.com/group/peewee-orm . If you would like to report a bug, `create a new issue <https://github.com/coleifer/peewee/issues/new>`_ on GitHub.
 
-Still want more info?
----------------------
+## Still want more info?
+
 
 .. image:: http://media.charlesleifer.com/blog/photos/wat.jpg
 
