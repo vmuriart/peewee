@@ -26,7 +26,6 @@ import itertools
 import logging
 import operator
 import re
-import sys
 import threading
 import time
 import uuid
@@ -38,15 +37,14 @@ from functools import wraps
 from inspect import isclass
 from logging import NullHandler
 
-from peewee._compat import (callable, unicode_type, string_type, basestring,
-                            print_, binary_construct, long, reraise,
-                            _METACLASS_, with_metaclass, PY2, PY3, PY26,
-                            total_seconds)
+from peewee._compat import (PY3, _METACLASS_, basestring, binary_construct,
+                            callable, long, reduce, string_type, unicode_type,
+                            with_metaclass)
 from peewee.exceptions import (DataError, DatabaseError, DoesNotExist,
-                               ImproperlyConfigured, IntegrityError,
-                               InterfaceError, InternalError,
+                               ExceptionWrapper, ImproperlyConfigured,
+                               IntegrityError, InterfaceError, InternalError,
                                NotSupportedError, OperationalError,
-                               ProgrammingError, ExceptionWrapper)
+                               ProgrammingError)
 
 __all__ = [
     'BareField',

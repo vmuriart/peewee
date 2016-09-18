@@ -18,6 +18,7 @@ PY26 = sys.version_info[:2] == (2, 6)
 if PY3:
     import builtins
     from collections import Callable
+    from functools import reduce
 
     callable = lambda c: isinstance(c, Callable)
     unicode_type = str
@@ -38,7 +39,7 @@ elif PY2:
     unicode_type = unicode
     string_type = basestring
     basestring = basestring
-
+    reduce = reduce
 
     def print_(s):
         sys.stdout.write(s)
