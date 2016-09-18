@@ -1214,7 +1214,7 @@ class TestInsertQuery(PeeweeTestCase):
     def test_insert_many_gen(self):
         def row_generator():
             for i in range(3):
-                yield {'username': 'u%s' % i}
+                yield {'username': 'u{0!s}'.format(i)}
 
         iq = InsertQuery(User, rows=row_generator())
         assert compiler.generate_insert(iq) == (
@@ -1383,7 +1383,7 @@ class TestInsertReturning(PeeweeTestCase):
         class User(self.BaseModel):
             username = CharField()
 
-        data = [{'username': 'user-%s' % i} for i in range(3)]
+        data = [{'username': 'user-{0!s}'.format(i)} for i in range(3)]
         # Bulk inserts do not ask for returned primary keys.
         self.assertInsertSQL(
             User.insert_many(data),
@@ -2016,9 +2016,9 @@ class TestDistinctOn(ModelTestCase):
 
     def test_distinct_on(self):
         for i in range(1, 4):
-            u = User.create(username='u%s' % i)
+            u = User.create(username='u{0!s}'.format(i))
             for j in range(i):
-                Blog.create(user=u, title='b-%s-%s' % (i, j))
+                Blog.create(user=u, title='b-{0!s}-{1!s}'.format(i, j))
 
         query = (Blog
                  .select(User.username, Blog.title)
@@ -2074,7 +2074,7 @@ class TestForUpdate(ModelTestCase):
 
         # select the username, it will not register as being updated
         res = new_db.execute_sql(
-            'select username from users where id = %s;' % u1.id)
+            'select username from users where id = {0!s};'.format(u1.id))
         username = res.fetchone()[0]
         assert username == 'u1'
 
@@ -2083,7 +2083,7 @@ class TestForUpdate(ModelTestCase):
 
         # now we get the update
         res = new_db.execute_sql(
-            'select username from users where id = %s;' % u1.id)
+            'select username from users where id = {0!s};'.format(u1.id))
         username = res.fetchone()[0]
         assert username == 'u1_edited'
 

@@ -221,8 +221,7 @@ class TestCompoundSelectQueries(ModelTestCase):
                 if op in test_db.compound_operations:
                     return fn(self)
                 else:
-                    log_console('"%s" not supported, skipping %s' %
-                                (op, fn.__name__))
+                    log_console('"{0!s}" not supported, skipping {1!s}'.format(op, fn.__name__))
 
             return inner
 
@@ -380,7 +379,7 @@ class TestCompoundSelectQueries(ModelTestCase):
         users = User.select().order_by(User.username)
         for user in users:
             for msg in ['foo', 'bar', 'baz']:
-                Blog.create(title='%s-%s' % (user.username, msg), user=user)
+                Blog.create(title='{0!s}-{1!s}'.format(user.username, msg), user=user)
 
         with self.assertQueryCount(1):
             q1 = (Blog

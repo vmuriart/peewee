@@ -110,7 +110,7 @@ class TestFieldTypes(ModelTestCase):
             like_wildcard = '*'
         else:
             like_wildcard = '%'
-        like_str = '%sA%s' % (like_wildcard, like_wildcard)
+        like_str = '{0!s}A{1!s}'.format(like_wildcard, like_wildcard)
         ilike_str = '%A%'
 
         case_sens = NM.select(NM.char_field).where(NM.char_field % like_str)

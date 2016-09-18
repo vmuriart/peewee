@@ -65,14 +65,14 @@ class DatabaseInitializer(object):
         try:
             return mapping[backend]
         except KeyError:
-            print_('Unrecognized database: "%s".' % backend)
-            print_('Available choices:\n%s' % '\n'.join(
-                sorted(mapping.keys())))
+            print_('Unrecognized database: "{0!s}".'.format(backend))
+            print_('Available choices:\n{0!s}'.format('\n'.join(
+                sorted(mapping.keys()))))
             raise
 
     def get_database(self, backend=None, db_class=None, **kwargs):
         backend = backend or self.backend
-        method = 'get_%s_database' % backend
+        method = 'get_{0!s}_database'.format(backend)
         kwargs.setdefault('use_speedups', False)
 
         if db_class is None:
@@ -84,7 +84,7 @@ class DatabaseInitializer(object):
             return getattr(self, method)(db_class, **kwargs)
 
     def get_filename(self, extension):
-        return os.path.join('/tmp', '%s%s' % (self.database_name, extension))
+        return os.path.join('/tmp', '{0!s}{1!s}'.format(self.database_name, extension))
 
     def get_apsw_database(self, db_class, **kwargs):
         return db_class(self.get_filename('.db'), timeout=1000, **kwargs)
@@ -170,7 +170,7 @@ class PeeweeTestCase(TestCase):
         logger.removeHandler(self.qh)
 
     def assertIsNone(self, value):
-        assert value is None, '%r is not None' % value
+        assert value is None, '{0!r} is not None'.format(value)
 
     def assertIsNotNone(self, value):
         assert value is not None
@@ -182,7 +182,7 @@ class PeeweeTestCase(TestCase):
         except exc_class:
             return
         else:
-            raise AssertionError('Exception %s not raised.' % exc_class)
+            raise AssertionError('Exception {0!s} not raised.'.format(exc_class))
 
     def queries(self, ignore_txn=False):
         queries = [x.msg for x in self.qh.queries]
@@ -257,7 +257,7 @@ def skip_if(expression):
     def decorator(klass):
         if expression():
             if TEST_VERBOSITY > 0:
-                print_('Skipping %s tests.' % klass.__name__)
+                print_('Skipping {0!s} tests.'.format(klass.__name__))
 
             class Dummy(object):
                 pass
@@ -280,7 +280,7 @@ def skip_test_if(expression):
         def inner(*args, **kwargs):
             if expression():
                 if TEST_VERBOSITY > 1:
-                    print_('Skipping %s test.' % fn.__name__)
+                    print_('Skipping {0!s} test.'.format(fn.__name__))
             else:
                 return fn(*args, **kwargs)
 

@@ -67,9 +67,9 @@ class TestQueryingModels(ModelTestCase):
 
     def create_users_blogs(self, n=10, nb=5):
         for i in range(n):
-            u = User.create(username='u%d' % i)
+            u = User.create(username='u{0:d}'.format(i))
             for j in range(nb):
-                b = Blog.create(title='b-%d-%d' % (i, j), content=str(j),
+                b = Blog.create(title='b-{0:d}-{1:d}'.format(i, j), content=str(j),
                                 user=u)
 
     def test_select(self):
@@ -182,9 +182,9 @@ class TestQueryingModels(ModelTestCase):
         User.create_users(3)
         u1, u2, u3 = [user for user in User.select().order_by(User.id)]
         for i in range(4):
-            Blog.create(title='b%s' % i, user=u1)
+            Blog.create(title='b{0!s}'.format(i), user=u1)
         for i in range(2):
-            Blog.create(title='b%s' % i, user=u3)
+            Blog.create(title='b{0!s}'.format(i), user=u3)
 
         subquery = Blog.select(fn.COUNT(Blog.pk)).where(Blog.user == User.id)
         query = User.update(username=subquery)
@@ -211,7 +211,7 @@ class TestQueryingModels(ModelTestCase):
             User.insert(doesnotexist='invalid')
 
     def test_insert_from(self):
-        u0, u1, u2 = [User.create(username='U%s' % i) for i in range(3)]
+        u0, u1, u2 = [User.create(username='U{0!s}'.format(i)) for i in range(3)]
 
         subquery = (User
                     .select(fn.LOWER(User.username))
@@ -293,7 +293,7 @@ class TestQueryingModels(ModelTestCase):
         interpolation = test_db.interpolation
 
         with self.assertQueryCount(1):
-            query = 'select * from users where username IN (%s, %s)' % (
+            query = 'select * from users where username IN ({0!s}, {1!s})'.format(
                 interpolation, interpolation)
             rq = User.raw(query, 'u1', 'u3')
             assert [u.username for u in rq] == ['u1', 'u3']
@@ -319,16 +319,16 @@ class TestQueryingModels(ModelTestCase):
 
     def test_limits_offsets(self):
         for i in range(10):
-            User.create(username='u%d' % i)
+            User.create(username='u{0:d}'.format(i))
         sq = User.select().order_by(User.id)
 
         offset_no_lim = sq.offset(3)
         assert [u.username for u in offset_no_lim] == \
-               ['u%d' % i for i in range(3, 10)]
+               ['u{0:d}'.format(i) for i in range(3, 10)]
 
         offset_with_lim = sq.offset(5).limit(3)
         assert [u.username for u in offset_with_lim] == \
-               ['u%d' % i for i in range(5, 8)]
+               ['u{0:d}'.format(i) for i in range(5, 8)]
 
     def test_raw_fn(self):
         self.create_users_blogs(3, 2)  # 3 users, 2 blogs each.
@@ -422,7 +422,7 @@ class TestModelAPIs(ModelTestCase):
             pass
 
         def rel_name(field):
-            return '%s_%s_ref' % (field.model_class._meta.name, field.name)
+            return '{0!s}_{1!s}_ref'.format(field.model_class._meta.name, field.name)
 
         class Bar(TestModel):
             fk1 = ForeignKeyField(Foo, related_name=rel_name)
@@ -504,7 +504,7 @@ class TestModelAPIs(ModelTestCase):
         u2 = User.create(username='u2')
         for u in [u1, u2]:
             for j in range(2):
-                Blog.create(user=u, title='%s-%s' % (u.username, j))
+                Blog.create(user=u, title='{0!s}-{1!s}'.format(u.username, j))
 
         with self.assertQueryCount(1):
             query = Blog.select().order_by(Blog.pk)
@@ -758,7 +758,7 @@ class TestModelAPIs(ModelTestCase):
         if isinstance(test_db, MySQLDatabase):
             # Need to explicitly tell MySQL it's OK to use zero.
             test_db.execute_sql("SET SESSION sql_mode='NO_AUTO_VALUE_ON_ZERO'")
-        query = 'insert into users (id, username) values (%s, %s)' % (
+        query = 'insert into users (id, username) values ({0!s}, {1!s})'.format(
             test_db.interpolation, test_db.interpolation)
         test_db.execute_sql(query, (0, 'foo'))
         Blog.insert(title='foo2', user=0).execute()
@@ -1000,7 +1000,7 @@ class TestModelAPIs(ModelTestCase):
 
         for u in [u1, u2]:
             for i in range(5):
-                Blog.create(title='b-%s-%s' % (u.username, i), user=u)
+                Blog.create(title='b-{0!s}-{1!s}'.format(u.username, i), user=u)
 
         uc = User.select().where(User.username == 'u1').join(Blog).count()
         assert uc == 5
@@ -1034,12 +1034,12 @@ class TestModelAPIs(ModelTestCase):
 
     def test_count_transaction(self):
         for i in range(10):
-            User.create(username='u%d' % i)
+            User.create(username='u{0:d}'.format(i))
 
         with test_db.transaction():
             for user in User.select():
                 for i in range(20):
-                    Blog.create(user=user, title='b-%d-%d' % (user.id, i))
+                    Blog.create(user=user, title='b-{0:d}-{1:d}'.format(user.id, i))
 
         count = Blog.select().count()
         assert count == 200
@@ -1130,12 +1130,12 @@ class TestModelAPIs(ModelTestCase):
             return
 
         for i in range(5):
-            key = 'gc%s' % i
+            key = 'gc{0!s}'.format(i)
             GCModel.create(name=key, key=key, value=key)
 
         insert = [
-            {'name': key, 'key': 'x-%s' % key, 'value': key}
-            for key in ['gc%s' % i for i in range(10)]]
+            {'name': key, 'key': 'x-{0!s}'.format(key), 'value': key}
+            for key in ['gc{0!s}'.format(i) for i in range(10)]]
         res = GCModel.insert_many(insert).on_conflict('IGNORE').execute()
         assert GCModel.select().count() == 10
 
@@ -1224,12 +1224,12 @@ class TestAggregatesWithModels(ModelTestCase):
         users = []
         ct = 0
         for i in range(2):
-            user = User.create(username='u-%d' % i)
+            user = User.create(username='u-{0:d}'.format(i))
             for j in range(2):
                 ct += 1
                 Blog.create(
                     user=user,
-                    title='b-%d-%d' % (i, j),
+                    title='b-{0:d}-{1:d}'.format(i, j),
                     pub_date=datetime.datetime(2013, 1, ct))
             users.append(user)
         return users
@@ -1239,7 +1239,7 @@ class TestAggregatesWithModels(ModelTestCase):
         annotated = User.select().annotate(Blog, fn.Count(Blog.pk).alias('ct'))
         for i, user in enumerate(annotated):
             assert user.ct == 2
-            assert user.username == 'u-%d' % i
+            assert user.username == 'u-{0:d}'.format(i)
 
     def test_annotate_datetime(self):
         users = self.create_user_blogs()
@@ -1270,11 +1270,11 @@ class TestMultiTableFromClause(ModelTestCase):
         super(TestMultiTableFromClause, self).setUp()
 
         for u in range(2):
-            user = User.create(username='u%s' % u)
+            user = User.create(username='u{0!s}'.format(u))
             for i in range(3):
-                b = Blog.create(user=user, title='b%s-%s' % (u, i))
+                b = Blog.create(user=user, title='b{0!s}-{1!s}'.format(u, i))
                 for j in range(i):
-                    Comment.create(blog=b, comment='c%s-%s' % (i, j))
+                    Comment.create(blog=b, comment='c{0!s}-{1!s}'.format(i, j))
 
     def test_from_multi_table(self):
         q = (Blog
@@ -1384,7 +1384,7 @@ class TestDeleteRecursive(ModelTestCase):
             for j in range(2):
                 ChildNullableData.create(
                     child=child,
-                    data='%s-%s' % (i, j))
+                    data='{0!s}-{1!s}'.format(i, j))
 
     def test_recursive_delete_parent_sql(self):
         with self.log_queries() as query_logger:
@@ -1481,7 +1481,7 @@ class TestDeleteRecursive(ModelTestCase):
         for i in range(3):
             Package.create(barcode=str(i))
             for j in range(4):
-                PackageItem.create(package=str(i), title='%s-%s' % (i, j))
+                PackageItem.create(package=str(i), title='{0!s}-{1!s}'.format(i, j))
 
         assert Package.select().count() == 3
         assert PackageItem.select().count() == 12
@@ -1507,7 +1507,7 @@ class TestTruncate(ModelTestCase):
 
     def test_truncate(self):
         for i in range(3):
-            User.create(username='u%s' % i)
+            User.create(username='u{0!s}'.format(i))
 
         User.truncate_table(restart_identity=True)
         assert User.select().count() == 0
@@ -2219,9 +2219,9 @@ class TestJoinNullableForeignKey(ModelTestCase):
         p1 = Parent.create(data='p1')
         p2 = Parent.create(data='p2')
         for i in range(1, 3):
-            Child.create(parent=p1, data='child%s-p1' % i)
-            Child.create(parent=p2, data='child%s-p2' % i)
-            Orphan.create(parent=p1, data='orphan%s-p1' % i)
+            Child.create(parent=p1, data='child{0!s}-p1'.format(i))
+            Child.create(parent=p2, data='child{0!s}-p2'.format(i))
+            Orphan.create(parent=p1, data='orphan{0!s}-p1'.format(i))
 
         Orphan.create(data='orphan1-noparent')
         Orphan.create(data='orphan2-noparent')

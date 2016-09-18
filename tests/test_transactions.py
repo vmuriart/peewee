@@ -292,7 +292,7 @@ class TestExecutionContext(ModelTestCase):
         def create(i):
             with test_db.execution_context():
                 with test_db.execution_context() as ctx:
-                    User.create(username='u%s' % i)
+                    User.create(username='u{0!s}'.format(i))
                     assert ctx.database.execution_context_depth() == 2
 
         threads = [threading.Thread(target=create, args=(i,))
@@ -563,7 +563,7 @@ class TestAtomic(ModelTestCase):
 
     def test_atomic_with_delete(self):
         for i in range(3):
-            User.create(username='u%s' % i)
+            User.create(username='u{0!s}'.format(i))
 
         with test_db.atomic():
             User.get(User.username == 'u1').delete_instance()

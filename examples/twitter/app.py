@@ -64,8 +64,7 @@ class User(BaseModel):
         ).count() > 0
 
     def gravatar_url(self, size=80):
-        return 'http://www.gravatar.com/avatar/%s?d=identicon&s=%d' % \
-               (md5(self.email.strip().lower().encode('utf-8')).hexdigest(),
+        return 'http://www.gravatar.com/avatar/{0!s}?d=identicon&s={1:d}'.format(md5(self.email.strip().lower().encode('utf-8')).hexdigest(),
                 size)
 
 
@@ -109,7 +108,7 @@ def auth_user(user):
     session['logged_in'] = True
     session['user_id'] = user.id
     session['username'] = user.username
-    flash('You are logged in as %s' % (user.username))
+    flash('You are logged in as {0!s}'.format((user.username)))
 
 
 # get the user from the session
@@ -296,7 +295,7 @@ def user_follow(username):
     except IntegrityError:
         pass
 
-    flash('You are following %s' % user.username)
+    flash('You are following {0!s}'.format(user.username))
     return redirect(url_for('user_detail', username=user.username))
 
 
@@ -308,7 +307,7 @@ def user_unfollow(username):
         (Relationship.from_user == get_current_user()) &
         (Relationship.to_user == user)
     ).execute()
-    flash('You are no longer following %s' % user.username)
+    flash('You are no longer following {0!s}'.format(user.username))
     return redirect(url_for('user_detail', username=user.username))
 
 

@@ -406,7 +406,7 @@ def not_allowed(func):
     """
 
     def inner(self, *args, **kwargs):
-        raise NotImplementedError('%s is not allowed on %s instances' % (
+        raise NotImplementedError('{0!s} is not allowed on {1!s} instances'.format(
             func, type(self).__name__))
 
     return inner
@@ -606,13 +606,13 @@ class Node(object):
         return Expression(self, OP.IS_NOT, None)
 
     def contains(self, rhs):
-        return Expression(self, OP.ILIKE, '%%%s%%' % rhs)
+        return Expression(self, OP.ILIKE, '%{0!s}%'.format(rhs))
 
     def startswith(self, rhs):
-        return Expression(self, OP.ILIKE, '%s%%' % rhs)
+        return Expression(self, OP.ILIKE, '{0!s}%'.format(rhs))
 
     def endswith(self, rhs):
-        return Expression(self, OP.ILIKE, '%%%s' % rhs)
+        return Expression(self, OP.ILIKE, '%{0!s}'.format(rhs))
 
     def between(self, low, high):
         return Expression(self, OP.BETWEEN, Clause(low, R('AND'), high))
@@ -789,7 +789,7 @@ class Window(Node):
 
 
 def Check(value):
-    return SQL('CHECK (%s)' % value)
+    return SQL('CHECK ({0!s})'.format(value))
 
 
 class DQ(Node):
@@ -1025,7 +1025,7 @@ class Field(Node):
         modifiers = self.get_modifiers()
         if modifiers:
             return SQL(
-                '%s(%s)' % (column_type, ', '.join(map(str, modifiers))))
+                '{0!s}({1!s})'.format(column_type, ', '.join(map(str, modifiers))))
         return SQL(column_type)
 
     def __ddl__(self, column_type):
@@ -1036,7 +1036,7 @@ class Field(Node):
         if self.primary_key:
             ddl.append(SQL('PRIMARY KEY'))
         if self.sequence:
-            ddl.append(SQL("DEFAULT NEXTVAL('%s')" % self.sequence))
+            ddl.append(SQL("DEFAULT NEXTVAL('{0!s}')".format(self.sequence)))
         if self.constraints:
             ddl.extend(self.constraints)
         return ddl
@@ -1083,7 +1083,7 @@ class _AutoPrimaryKeyField(PrimaryKeyField):
 
     def add_to_class(self, model_class, name):
         if name != self._column_name:
-            raise ValueError('%s must be named `%s`.' % (type(self), name))
+            raise ValueError('{0!s} must be named `{1!s}`.'.format(type(self), name))
         super(_AutoPrimaryKeyField, self).add_to_class(model_class, name)
 
 
@@ -1312,8 +1312,8 @@ class TimestampField(IntegerField):
     def __init__(self, *args, **kwargs):
         self.resolution = kwargs.pop('resolution', 1) or 1
         if self.resolution not in self.valid_resolutions:
-            raise ValueError('TimestampField resolution must be one of: %s' %
-                             ', '.join(str(i) for i in self.valid_resolutions))
+            raise ValueError('TimestampField resolution must be one of: {0!s}'.format(
+                             ', '.join(str(i) for i in self.valid_resolutions)))
 
         self.utc = kwargs.pop('utc', False) or False
         _dt = datetime.datetime
@@ -1473,7 +1473,7 @@ class ForeignKeyField(IntegerField):
     def _get_related_name(self):
         if self._related_name and callable(self._related_name):
             return self._related_name(self)
-        return self._related_name or ('%s_set' % self.model_class._meta.name)
+        return self._related_name or ('{0!s}_set'.format(self.model_class._meta.name))
 
     def add_to_class(self, model_class, name):
         if isinstance(self.rel_model, Proxy):
@@ -1489,7 +1489,7 @@ class ForeignKeyField(IntegerField):
 
         self.name = name
         self.model_class = model_class
-        self.db_column = obj_id_name = self.db_column or '%s_id' % self.name
+        self.db_column = obj_id_name = self.db_column or '{0!s}_id'.format(self.name)
         if obj_id_name == self.name:
             obj_id_name += '_id'
         if not self.verbose_name:
@@ -1511,7 +1511,7 @@ class ForeignKeyField(IntegerField):
         if model_class._meta.validate_backrefs:
             def invalid(msg, **context):
                 context.update(
-                    field='%s.%s' % (model_class._meta.name, name),
+                    field='{0!s}.{1!s}'.format(model_class._meta.name, name),
                     backref=self.related_name,
                     obj_id_name=obj_id_name)
                 raise AttributeError(msg % context)
@@ -1606,13 +1606,13 @@ class AliasMap(object):
         self._counter = start
 
     def __repr__(self):
-        return '<AliasMap: %s>' % self._alias_map
+        return '<AliasMap: {0!s}>'.format(self._alias_map)
 
     def add(self, obj, alias=None):
         if obj in self._alias_map:
             return
         self._counter += 1
-        self._alias_map[obj] = alias or '%s%s' % (self.prefix, self._counter)
+        self._alias_map[obj] = alias or '{0!s}{1!s}'.format(self.prefix, self._counter)
 
     def __getitem__(self, obj):
         if obj not in self._alias_map:
@@ -1718,7 +1718,7 @@ class QueryCompiler(object):
         }
 
     def quote(self, s):
-        return '%s%s%s' % (self.quote_char, s, self.quote_char)
+        return '{0!s}{1!s}{2!s}'.format(self.quote_char, s, self.quote_char)
 
     def get_column_type(self, f):
         return self._field_map[f] if f in self._field_map else f.upper()
@@ -1761,13 +1761,13 @@ class QueryCompiler(object):
     def _parse_func(self, node, alias_map, conv):
         conv = node._coerce and conv or None
         sql, params = self.parse_node_list(node.arguments, alias_map, conv)
-        return '%s(%s)' % (node.name, strip_parens(sql)), params
+        return '{0!s}({1!s})'.format(node.name, strip_parens(sql)), params
 
     def _parse_clause(self, node, alias_map, conv):
         sql, params = self.parse_node_list(
             node.nodes, alias_map, conv, node.glue)
         if node.parens:
-            sql = '(%s)' % strip_parens(sql)
+            sql = '({0!s})'.format(strip_parens(sql))
         return sql, params
 
     def _parse_entity(self, node, alias_map, conv):
@@ -1811,9 +1811,9 @@ class QueryCompiler(object):
         # We add outer parentheses in the event the compound query is used in
         # the `from_()` clause, in which case we'll need them.
         if node.database.compound_select_parentheses:
-            sql = '((%s) %s (%s))' % (l, node.operator, r)
+            sql = '(({0!s}) {1!s} ({2!s}))'.format(l, node.operator, r)
         else:
-            sql = '(%s %s %s)' % (l, node.operator, r)
+            sql = '({0!s} {1!s} {2!s})'.format(l, node.operator, r)
         return sql, lp + rp
 
     def _parse_select_query(self, node, alias_map, conv):
@@ -1825,7 +1825,7 @@ class QueryCompiler(object):
                 select_field = clone.model_class._meta.primary_key
             clone._select = (select_field,)
         sub, params = self.generate_select(clone, alias_map)
-        return '(%s)' % strip_parens(sub), params
+        return '({0!s})'.format(strip_parens(sub)), params
 
     def _parse_strip_parens(self, node, alias_map, conv):
         sql, params = self.parse_node(node.node, alias_map, conv)
@@ -1845,7 +1845,7 @@ class QueryCompiler(object):
             # If you're wondering how to pass a list into your query, simply
             # wrap it in Param().
             sql, params = self.parse_node_list(node, alias_map, conv)
-            sql = '(%s)' % sql
+            sql = '({0!s})'.format(sql)
         elif isinstance(node, Model):
             sql = self.interpolation
             if conv and isinstance(conv, ForeignKeyField):
@@ -1877,7 +1877,7 @@ class QueryCompiler(object):
 
         if isinstance(node, Node):
             if node._negated:
-                sql = 'NOT %s' % sql
+                sql = 'NOT {0!s}'.format(sql)
             if node._alias:
                 sql = ' '.join((sql, 'AS', node._alias))
             if node._ordering:
@@ -2025,9 +2025,9 @@ class QueryCompiler(object):
 
         if query._limit is not None or (query._offset and db.limit_max):
             limit = query._limit if query._limit is not None else db.limit_max
-            clauses.append(SQL('LIMIT %s' % limit))
+            clauses.append(SQL('LIMIT {0!s}'.format(limit)))
         if query._offset is not None:
-            clauses.append(SQL('OFFSET %s' % query._offset))
+            clauses.append(SQL('OFFSET {0!s}'.format(query._offset)))
 
         for_update, no_wait = query._for_update
         if for_update:
@@ -2041,7 +2041,7 @@ class QueryCompiler(object):
         alias_map = self.alias_map_class()
         alias_map.add(model, model._meta.db_table)
         if query._on_conflict:
-            statement = 'UPDATE OR %s' % query._on_conflict
+            statement = 'UPDATE OR {0!s}'.format(query._on_conflict)
         else:
             statement = 'UPDATE'
         clauses = [SQL(statement), model.as_entity(), SQL('SET')]
@@ -2079,7 +2079,7 @@ class QueryCompiler(object):
         if query._upsert:
             statement = meta.database.upsert_sql
         elif query._on_conflict:
-            statement = 'INSERT OR %s INTO' % query._on_conflict
+            statement = 'INSERT OR {0!s} INTO'.format(query._on_conflict)
         else:
             statement = 'INSERT INTO'
         clauses = [SQL(statement), model.as_entity()]
@@ -2156,9 +2156,9 @@ class QueryCompiler(object):
             field.rel_model.as_entity(),
             EnclosedClause(field.to_field.as_entity())]
         if field.on_delete:
-            ddl.append(SQL('ON DELETE %s' % field.on_delete))
+            ddl.append(SQL('ON DELETE {0!s}'.format(field.on_delete)))
         if field.on_update:
-            ddl.append(SQL('ON UPDATE %s' % field.on_update))
+            ddl.append(SQL('ON UPDATE {0!s}'.format(field.on_update)))
         return Clause(*ddl)
 
     def return_parsed_node(function_name):
@@ -2171,7 +2171,7 @@ class QueryCompiler(object):
         return inner
 
     def _create_foreign_key(self, model_class, field, constraint=None):
-        constraint = constraint or 'fk_%s_%s_refs_%s' % (
+        constraint = constraint or 'fk_{0!s}_{1!s}_refs_{2!s}'.format(
             model_class._meta.db_table,
             field.db_column,
             field.rel_model._meta.db_table)
@@ -2234,10 +2234,10 @@ class QueryCompiler(object):
     truncate_table = return_parsed_node('_truncate_table')
 
     def index_name(self, table, columns):
-        index = '%s_%s' % (table, '_'.join(columns))
+        index = '{0!s}_{1!s}'.format(table, '_'.join(columns))
         if len(index) > 64:
             index_hash = hashlib.md5(index.encode('utf-8')).hexdigest()
-            index = '%s_%s' % (table[:55], index_hash[:8])  # 55 + 1 + 8 = 64
+            index = '{0!s}_{1!s}'.format(table[:55], index_hash[:8])  # 55 + 1 + 8 = 64
         return index
 
     def _create_index(self, model_class, fields, unique, *extra):
@@ -2791,7 +2791,7 @@ class Query(Node):
 
     def __repr__(self):
         sql, params = self.sql()
-        return '%s %s %s' % (self.model_class, sql, params)
+        return '{0!s} {1!s} {2!s}'.format(self.model_class, sql, params)
 
     def clone(self):
         query = type(self)(self.model_class)
@@ -3067,7 +3067,7 @@ class SelectQuery(Query):
             supported_ops = self.model_class._meta.database.compound_operations
             if operator not in supported_ops:
                 raise ValueError(
-                    'Your database does not support %s' % operator)
+                    'Your database does not support {0!s}'.format(operator))
             return CompoundSelect(self.model_class, self, operator, other)
 
         return inner
@@ -3192,7 +3192,7 @@ class SelectQuery(Query):
             clone._limit = clone._offset = None
 
         sql, params = clone.sql()
-        wrapped = 'SELECT COUNT(1) FROM (%s) AS wrapped_select' % sql
+        wrapped = 'SELECT COUNT(1) FROM ({0!s}) AS wrapped_select'.format(sql)
         rq = self.model_class.raw(wrapped, *params)
         return rq.scalar() or 0
 
@@ -3207,8 +3207,7 @@ class SelectQuery(Query):
             return next(clone.execute())
         except StopIteration:
             raise self.model_class.DoesNotExist(
-                'Instance matching query does not exist:\nSQL: %s\nPARAMS: %s'
-                % self.sql())
+                'Instance matching query does not exist:\nSQL: {0!s}\nPARAMS: {1!s}'.format(*self.sql()))
 
     def peek(self, n=1):
         res = self.execute()
@@ -3465,7 +3464,7 @@ class InsertQuery(_WriteQuery):
 
             def validate_field(field):
                 if field not in valid_fields:
-                    raise KeyError('"%s" is not a recognized field.' % field)
+                    raise KeyError('"{0!s}" is not a recognized field.'.format(field))
 
         defaults = model_meta._default_dict
         callables = model_meta._default_callables
@@ -4028,11 +4027,11 @@ class SqliteDatabase(Database):
         if self._pragmas:
             cursor = conn.cursor()
             for pragma, value in self._pragmas:
-                cursor.execute('PRAGMA %s = %s;' % (pragma, value))
+                cursor.execute('PRAGMA {0!s} = {1!s};'.format(pragma, value))
             cursor.close()
 
     def begin(self, lock_type='DEFERRED'):
-        self.execute_sql('BEGIN %s' % lock_type, require_commit=False)
+        self.execute_sql('BEGIN {0!s}'.format(lock_type), require_commit=False)
 
     def create_foreign_key(self, model_class, field, constraint=None):
         raise OperationalError('SQLite does not support ALTER TABLE '
@@ -4051,7 +4050,7 @@ class SqliteDatabase(Database):
 
         # Determine which indexes have a unique constraint.
         unique_indexes = set()
-        cursor = self.execute_sql('PRAGMA index_list("%s")' % table)
+        cursor = self.execute_sql('PRAGMA index_list("{0!s}")'.format(table))
         for row in cursor.fetchall():
             name = row[1]
             is_unique = int(row[2]) == 1
@@ -4061,7 +4060,7 @@ class SqliteDatabase(Database):
         # Retrieve the indexed columns.
         index_columns = {}
         for index_name in sorted(index_to_sql):
-            cursor = self.execute_sql('PRAGMA index_info("%s")' % index_name)
+            cursor = self.execute_sql('PRAGMA index_info("{0!s}")'.format(index_name))
             index_columns[index_name] = [row[2] for row in cursor.fetchall()]
 
         return [
@@ -4074,16 +4073,16 @@ class SqliteDatabase(Database):
             for name in sorted(index_to_sql)]
 
     def get_columns(self, table, schema=None):
-        cursor = self.execute_sql('PRAGMA table_info("%s")' % table)
+        cursor = self.execute_sql('PRAGMA table_info("{0!s}")'.format(table))
         return [ColumnMetadata(row[1], row[2], not row[3], bool(row[5]), table)
                 for row in cursor.fetchall()]
 
     def get_primary_keys(self, table, schema=None):
-        cursor = self.execute_sql('PRAGMA table_info("%s")' % table)
+        cursor = self.execute_sql('PRAGMA table_info("{0!s}")'.format(table))
         return [row[1] for row in cursor.fetchall() if row[-1]]
 
     def get_foreign_keys(self, table, schema=None):
-        cursor = self.execute_sql('PRAGMA foreign_key_list("%s")' % table)
+        cursor = self.execute_sql('PRAGMA foreign_key_list("{0!s}")'.format(table))
         return [ForeignKeyMetadata(row[3], row[2], row[4], table)
                 for row in cursor.fetchall()]
 
@@ -4144,7 +4143,7 @@ class PostgresqlDatabase(Database):
         if meta.primary_key is not False and meta.primary_key.sequence:
             return meta.primary_key.sequence
         elif meta.auto_increment:
-            return '%s_%s_seq' % (meta.db_table, meta.primary_key.db_column)
+            return '{0!s}_{1!s}_seq'.format(meta.db_table, meta.primary_key.db_column)
 
     def last_insert_id(self, cursor, model):
         sequence = self._get_pk_sequence(model)
@@ -4153,11 +4152,11 @@ class PostgresqlDatabase(Database):
 
         meta = model._meta
         if meta.schema:
-            schema = '%s.' % meta.schema
+            schema = '{0!s}.'.format(meta.schema)
         else:
             schema = ''
 
-        cursor.execute("SELECT CURRVAL('%s\"%s\"')" % (schema, sequence))
+        cursor.execute("SELECT CURRVAL('{0!s}\"{1!s}\"')".format(schema, sequence))
         result = cursor.fetchone()[0]
         if self.get_autocommit():
             self.commit()
@@ -4242,7 +4241,7 @@ class PostgresqlDatabase(Database):
 
     def set_search_path(self, *search_path):
         path_params = ','.join(['%s'] * len(search_path))
-        self.execute_sql('SET search_path TO %s' % path_params, search_path)
+        self.execute_sql('SET search_path TO {0!s}'.format(path_params), search_path)
 
     def get_noop_sql(self):
         return 'SELECT 0 WHERE false'
@@ -4291,7 +4290,7 @@ class MySQLDatabase(Database):
         return [row for row, in self.execute_sql('SHOW TABLES')]
 
     def get_indexes(self, table, schema=None):
-        cursor = self.execute_sql('SHOW INDEX FROM `%s`' % table)
+        cursor = self.execute_sql('SHOW INDEX FROM `{0!s}`'.format(table))
         unique = set()
         indexes = {}
         for row in cursor.fetchall():
@@ -4313,7 +4312,7 @@ class MySQLDatabase(Database):
                 for name, null, dt in cursor.fetchall()]
 
     def get_primary_keys(self, table, schema=None):
-        cursor = self.execute_sql('SHOW INDEX FROM `%s`' % table)
+        cursor = self.execute_sql('SHOW INDEX FROM `{0!s}`'.format(table))
         return [row[4] for row in cursor.fetchall() if row[2] == 'PRIMARY']
 
     def get_foreign_keys(self, table, schema=None):
@@ -4473,15 +4472,15 @@ class savepoint(_callable_context_manager):
         self.db.execute_sql(query, require_commit=False)
 
     def commit(self):
-        self._execute('RELEASE SAVEPOINT %s;' % self.quoted_sid)
+        self._execute('RELEASE SAVEPOINT {0!s};'.format(self.quoted_sid))
 
     def rollback(self):
-        self._execute('ROLLBACK TO SAVEPOINT %s;' % self.quoted_sid)
+        self._execute('ROLLBACK TO SAVEPOINT {0!s};'.format(self.quoted_sid))
 
     def __enter__(self):
         self._orig_autocommit = self.db.get_autocommit()
         self.db.set_autocommit(False)
-        self._execute('SAVEPOINT %s;' % self.quoted_sid)
+        self._execute('SAVEPOINT {0!s};'.format(self.quoted_sid))
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
@@ -4663,7 +4662,7 @@ class ModelOptions(object):
             self.db_table = self.db_table_func(cls)
 
     def __repr__(self):
-        return '<%s: %s>' % (self.__class__.__name__, self.name)
+        return '<{0!s}: {1!s}>'.format(self.__class__.__name__, self.name)
 
     def prepared(self):
         if self.order_by:
@@ -4868,10 +4867,10 @@ class BaseModel(type):
 
         # create a repr and error class before finalizing
         if hasattr(cls, '__unicode__'):
-            setattr(cls, '__repr__', lambda self: '<%s: %r>' % (
+            setattr(cls, '__repr__', lambda self: '<{0!s}: {1!r}>'.format(
                 cls.__name__, self.__unicode__()))
 
-        exc_name = '%sDoesNotExist' % cls.__name__
+        exc_name = '{0!s}DoesNotExist'.format(cls.__name__)
         exc_attrs = {'__module__': cls.__module__}
         exception_class = type(exc_name, (DoesNotExist,), exc_attrs)
         cls.DoesNotExist = exception_class
@@ -5244,7 +5243,7 @@ def prefetch_add_subquery(sq, subqueries):
                 break
 
         if not (fks or backrefs):
-            tgt_err = ' using %s' % target_model if target_model else ''
+            tgt_err = ' using {0!s}'.format(target_model) if target_model else ''
             raise AttributeError('Error: unable to find foreign key for '
                                  'query: %s%s' % (subquery, tgt_err))
 
@@ -5297,7 +5296,7 @@ class PrefetchResult(__prefetched):
                 identifier = instance._data[field.to_field.name]
                 key = (field, identifier)
                 rel_instances = id_map.get(key, [])
-                dest = '%s_prefetch' % field.related_name
+                dest = '{0!s}_prefetch'.format(field.related_name)
                 for inst in rel_instances:
                     setattr(inst, attname, instance)
                 setattr(instance, dest, rel_instances)
