@@ -8,8 +8,9 @@ import pytest
 
 from peewee import (CharField, CompositeKey, DateTimeField, Field,
                     ForeignKeyField, IntegerField, IntegrityError, JOIN, Model,
-                    ModelOptions, MySQLDatabase, PostgresqlDatabase, R, SQL,
-                    SqliteDatabase, TextField, fn, prefetch)
+                    MySQLDatabase, PostgresqlDatabase, R, SQL, SqliteDatabase,
+                    TextField, fn, prefetch)
+from peewee.core import ModelOptions
 from tests.base import (ModelTestCase, PeeweeTestCase, TestModel, compiler,
                         database_initializer, normal_compiler, skip_if,
                         skip_unless, test_db, ulit)

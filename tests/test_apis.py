@@ -2,7 +2,8 @@
 
 import pytest
 
-from peewee import CharField, Model, Node
+from peewee import CharField, Model
+from peewee.core import Node
 from tests.base import PeeweeTestCase
 
 

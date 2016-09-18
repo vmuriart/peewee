@@ -5,8 +5,8 @@ import sys
 
 import pytest
 
-from peewee import (JOIN, JOIN_LEFT_OUTER, ModelQueryResultWrapper,
-                    NaiveQueryResultWrapper, SQL, fn, prefetch)
+from peewee import JOIN, JOIN_LEFT_OUTER, SQL, fn, prefetch
+from peewee.core import ModelQueryResultWrapper, NaiveQueryResultWrapper
 from tests.base import ModelTestCase, test_db
 from tests.models import (Blog, BlogData, Category, Child, ChildPet, Comment,
                           CommentCategory, Flag, Note, NoteFlag, Orphan,

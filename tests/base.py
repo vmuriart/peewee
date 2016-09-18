@@ -7,8 +7,8 @@ from contextlib import contextmanager
 from functools import wraps
 from unittest import TestCase
 
-from peewee import (AliasMap, Model, MySQLDatabase, PostgresqlDatabase,
-                    QueryCompiler, SelectQuery, SqliteDatabase, logger, print_)
+from peewee import Model, MySQLDatabase, PostgresqlDatabase, SqliteDatabase
+from peewee.core import AliasMap, QueryCompiler, SelectQuery, logger, print_
 
 # Python 2/3 compatibility.
 if sys.version_info[0] < 3:

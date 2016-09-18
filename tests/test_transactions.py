@@ -6,7 +6,8 @@ import mock
 import pytest
 
 from peewee import (IntegrityError, InternalError, PostgresqlDatabase,
-                    SqliteDatabase, _atomic, transaction)
+                    SqliteDatabase)
+from peewee.core import _atomic, transaction
 from tests.base import ModelTestCase, database_class, test_db
 from tests.models import Blog, UniqueModel, User
 

@@ -11,8 +11,8 @@ import pytest
 
 from peewee import (BlobField, DateField, DateTimeField, DecimalField,
                     IntegrityError, Model, MySQLDatabase, Proxy,
-                    SqliteDatabase, TimeField, binary_construct, fn, prefetch,
-                    sqlite3)
+                    SqliteDatabase, TimeField, fn, prefetch)
+from peewee.core import binary_construct, sqlite3
 from tests.base import (ModelTestCase, PeeweeTestCase, TestModel,
                         binary_construct, binary_types, database_class,
                         skip_if, skip_test_if, skip_unless, test_db)

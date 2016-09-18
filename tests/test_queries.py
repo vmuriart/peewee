@@ -5,11 +5,11 @@ import datetime
 import pytest
 
 from peewee import (CharField, Clause, CompositeKey, DQ, DateField,
-                    DateTimeField, DeleteQuery, FloatField, ForeignKeyField,
-                    InsertQuery, IntegerField, JOIN, Model, MySQLDatabase,
-                    OperationalError, Param, Proxy, R, RawQuery, SQL,
-                    SelectQuery, SqliteDatabase, TextField, UpdateQuery,
-                    Window, fn, prefetch_add_subquery, strip_parens)
+                    DateTimeField, FloatField, ForeignKeyField, IntegerField,
+                    JOIN, Model, MySQLDatabase, OperationalError, Param, Proxy,
+                    R, SQL, SqliteDatabase, TextField, Window, fn, )
+from peewee.core import (DeleteQuery, InsertQuery, RawQuery, SelectQuery,
+                         UpdateQuery, prefetch_add_subquery, strip_parens)
 from tests.base import (ModelTestCase, PeeweeTestCase, TestDatabase, TestModel,
                         compiler, normal_compiler, skip_if, test_db)
 from tests.models import (Blog, CSVRow, Category, Child, ChildPet, Comment,
@@ -23,17 +23,30 @@ class TestSelectQuery(PeeweeTestCase):
         sq = SelectQuery(User)
         self.assertSelect(sq, '"users"."id", "users"."username"', [])
 
-        sq = SelectQuery(Blog, Blog.pk, Blog.title, Blog.user, User.username).join(User)
-        self.assertSelect(sq, '"blog"."pk", "blog"."title", "blog"."user_id", "users"."username"', [])
+        sq = SelectQuery(Blog, Blog.pk, Blog.title, Blog.user,
+                         User.username).join(User)
+        self.assertSelect(sq,
+                          '"blog"."pk", "blog"."title", "blog"."user_id", "users"."username"',
+                          [])
 
-        sq = SelectQuery(User, fn.Lower(fn.Substr(User.username, 0, 1)).alias('lu'), fn.Count(Blog.pk)).join(Blog)
-        self.assertSelect(sq, 'Lower(Substr("users"."username", ?, ?)) AS lu, Count("blog"."pk")', [0, 1])
+        sq = SelectQuery(User,
+                         fn.Lower(fn.Substr(User.username, 0, 1)).alias('lu'),
+                         fn.Count(Blog.pk)).join(Blog)
+        self.assertSelect(sq,
+                          'Lower(Substr("users"."username", ?, ?)) AS lu, Count("blog"."pk")',
+                          [0, 1])
 
-        sq = SelectQuery(User, User.username, fn.Count(Blog.select().where(Blog.user == User.id)))
-        self.assertSelect(sq, '"users"."username", Count(SELECT "blog"."pk" FROM "blog" AS blog WHERE ("blog"."user_id" = "users"."id"))', [])
+        sq = SelectQuery(User, User.username,
+                         fn.Count(Blog.select().where(Blog.user == User.id)))
+        self.assertSelect(sq,
+                          '"users"."username", Count(SELECT "blog"."pk" FROM "blog" AS blog WHERE ("blog"."user_id" = "users"."id"))',
+                          [])
 
-        sq = SelectQuery(Package, Package, fn.Count(PackageItem.id)).join(PackageItem)
-        self.assertSelect(sq, '"package"."id", "package"."barcode", Count("packageitem"."id")', [])
+        sq = SelectQuery(Package, Package, fn.Count(PackageItem.id)).join(
+            PackageItem)
+        self.assertSelect(sq,
+                          '"package"."id", "package"."barcode", Count("packageitem"."id")',
+                          [])
 
     def test_select_distinct(self):
         sq = SelectQuery(User).distinct()
@@ -44,8 +57,8 @@ class TestSelectQuery(PeeweeTestCase):
         sq = sq.distinct(False)
         assert compiler.generate_select(sq) == \
                (
-               'SELECT "users"."id", "users"."username" FROM "users" AS users',
-               [])
+                   'SELECT "users"."id", "users"."username" FROM "users" AS users',
+                   [])
 
         sq = SelectQuery(User).distinct([User.username])
         assert compiler.generate_select(sq) == \
@@ -353,11 +366,15 @@ class TestSelectQuery(PeeweeTestCase):
         self.assertWhere(sq, '("users"."id" < ?)', [5])
 
         sq = SelectQuery(Blog).where(Blog.user << sq)
-        self.assertWhere(sq, '("blog"."user_id" IN (SELECT "users"."id" FROM "users" AS users WHERE ("users"."id" < ?)))', [5])
+        self.assertWhere(sq,
+                         '("blog"."user_id" IN (SELECT "users"."id" FROM "users" AS users WHERE ("users"."id" < ?)))',
+                         [5])
 
         p = SelectQuery(Package).where(Package.id == 2)
         sq = SelectQuery(PackageItem).where(PackageItem.package << p)
-        self.assertWhere(sq, '("packageitem"."package_id" IN (SELECT "package"."barcode" FROM "package" AS package WHERE ("package"."id" = ?)))', [2])
+        self.assertWhere(sq,
+                         '("packageitem"."package_id" IN (SELECT "package"."barcode" FROM "package" AS package WHERE ("package"."id" = ?)))',
+                         [2])
 
     def test_orwhere(self):
         sq = SelectQuery(User).orwhere(User.id < 5)
@@ -834,17 +851,17 @@ class TestSelectQuery(PeeweeTestCase):
         fixed_sql = [
             ('SELECT "t1"."id", "t1"."data" FROM "parent" AS t1', []),
             (
-            'SELECT "t1"."id", "t1"."parent_id", "t1"."data" FROM "child" AS t1 WHERE ("t1"."parent_id" IN (SELECT "t2"."id" FROM "parent" AS t2))',
-            []),
+                'SELECT "t1"."id", "t1"."parent_id", "t1"."data" FROM "child" AS t1 WHERE ("t1"."parent_id" IN (SELECT "t2"."id" FROM "parent" AS t2))',
+                []),
             (
-            'SELECT "t1"."id", "t1"."parent_id", "t1"."data" FROM "orphan" AS t1 WHERE ("t1"."parent_id" IN (SELECT "t2"."id" FROM "parent" AS t2))',
-            []),
+                'SELECT "t1"."id", "t1"."parent_id", "t1"."data" FROM "orphan" AS t1 WHERE ("t1"."parent_id" IN (SELECT "t2"."id" FROM "parent" AS t2))',
+                []),
             (
-            'SELECT "t1"."id", "t1"."child_id", "t1"."data" FROM "childpet" AS t1 WHERE ("t1"."child_id" IN (SELECT "t2"."id" FROM "child" AS t2 WHERE ("t2"."parent_id" IN (SELECT "t3"."id" FROM "parent" AS t3))))',
-            []),
+                'SELECT "t1"."id", "t1"."child_id", "t1"."data" FROM "childpet" AS t1 WHERE ("t1"."child_id" IN (SELECT "t2"."id" FROM "child" AS t2 WHERE ("t2"."parent_id" IN (SELECT "t3"."id" FROM "parent" AS t3))))',
+                []),
             (
-            'SELECT "t1"."id", "t1"."orphan_id", "t1"."data" FROM "orphanpet" AS t1 WHERE ("t1"."orphan_id" IN (SELECT "t2"."id" FROM "orphan" AS t2 WHERE ("t2"."parent_id" IN (SELECT "t3"."id" FROM "parent" AS t3))))',
-            []),
+                'SELECT "t1"."id", "t1"."orphan_id", "t1"."data" FROM "orphanpet" AS t1 WHERE ("t1"."orphan_id" IN (SELECT "t2"."id" FROM "orphan" AS t2 WHERE ("t2"."parent_id" IN (SELECT "t3"."id" FROM "parent" AS t3))))',
+                []),
         ]
         for prefetch_result, expected in zip(fixed, fixed_sql):
             assert normal_compiler.generate_select(prefetch_result.query) == \
