@@ -1,5 +1,4 @@
 import os
-import sys
 import warnings
 from distutils.core import setup
 from distutils.extension import Extension
@@ -23,10 +22,10 @@ else:
     if StrictVersion(cython_version) < StrictVersion(cython_min_version):
         cython_installed = False
         warnings.warn('Cython C extensions for peewee will NOT be built, '
-                      'because the installed Cython version '
-                      '(' + cython_version + ') is too old. To enable Cython '
-                      'C extensions, install Cython >=' + cython_min_version +
-                      '.')
+                      'because the installed Cython version (' +
+                      cython_version + ') is too old. To enable Cython '
+                                       'C extensions, install Cython >=' +
+                      cython_min_version + '.')
     else:
         cython_installed = True
 
@@ -39,7 +38,6 @@ sqlite_udf_module = Extension(
 sqlite_ext_module = Extension(
     'playhouse._sqlite_ext',
     ['playhouse/_sqlite_ext.pyx'])
-
 
 ext_modules = []
 if cython_installed:
@@ -71,6 +69,6 @@ setup(
         'Programming Language :: Python',
         'Programming Language :: Python :: 3',
     ],
-    scripts = ['pwiz.py'],
+    scripts=['pwiz.py'],
     **setup_kwargs
 )

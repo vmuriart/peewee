@@ -18,9 +18,9 @@ from playhouse.tests.test_queries import *
 from playhouse.tests.test_query_results import *
 from playhouse.tests.test_transactions import *
 
-
 if __name__ == '__main__':
     from peewee import print_
+
     print_("""\033[1;31m
      ______   ______     ______     __     __     ______     ______
     /\  == \ /\  ___\   /\  ___\   /\ \  _ \ \   /\  ___\   /\  ___\\

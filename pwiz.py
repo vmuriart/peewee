@@ -32,6 +32,7 @@ DATABASE_MAP = dict((value, key)
                     for key in DATABASE_ALIASES
                     for value in DATABASE_ALIASES[key])
 
+
 def make_introspector(database_type, database_name, **kwargs):
     if database_type not in DATABASE_MAP:
         err('Unrecognized database, must be one of: %s' %
@@ -42,6 +43,7 @@ def make_introspector(database_type, database_name, **kwargs):
     DatabaseClass = DATABASE_MAP[database_type]
     db = DatabaseClass(database_name, **kwargs)
     return Introspector.from_database(db, schema=schema)
+
 
 def print_models(introspector, tables=None, preserve_order=False):
     database = introspector.introspect(table_names=tables)
@@ -107,8 +109,8 @@ def print_models(introspector, tables=None, preserve_order=False):
             print_('        schema = \'%s\'' % introspector.schema)
         if len(primary_keys) > 1:
             pk_field_names = sorted([
-                field.name for col, field in columns
-                if col in primary_keys])
+                                        field.name for col, field in columns
+                                        if col in primary_keys])
             pk_list = ', '.join("'%s'" % pk for pk in pk_field_names)
             print_('        primary_key = CompositeKey(%s)' % pk_list)
         print_('')
@@ -120,6 +122,7 @@ def print_models(introspector, tables=None, preserve_order=False):
         if table not in seen:
             if not tables or table in tables:
                 _print_table(table, seen)
+
 
 def print_header(cmd_line, introspector):
     timestamp = datetime.datetime.now()
@@ -134,6 +137,7 @@ def print_header(cmd_line, introspector):
 def err(msg):
     sys.stderr.write('\033[91m%s\033[0m\n' % msg)
     sys.stderr.flush()
+
 
 def get_option_parser():
     parser = OptionParser(usage='usage: %prog [options] database_name')
@@ -156,6 +160,7 @@ def get_option_parser():
     ao('-o', '--preserve-order', action='store_true', dest='preserve_order',
        help='Model definition column ordering matches source table.')
     return parser
+
 
 def get_connect_kwargs(options):
     ops = ('host', 'port', 'user', 'schema')
