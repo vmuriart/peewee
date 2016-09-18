@@ -4,9 +4,9 @@ import itertools
 import operator
 from functools import wraps
 
-from peewee import IntegerField, Model, PostgresqlDatabase, SQL
+from peewee import IntegerField, Model, SQL
 from tests.base import (ModelTestCase, PeeweeTestCase, database_initializer,
-                        log_console, skip_unless, test_db)
+                        log_console, test_db)
 from tests.models import Blog, OrderedModel, UniqueModel, User
 
 compound_db = database_initializer.get_in_memory_database()
@@ -398,27 +398,3 @@ class TestCompoundSelectQueries(ModelTestCase):
         cq = (lhs | rhs)
         assert cq.count() == 3
 
-
-@skip_unless(lambda: isinstance(test_db, PostgresqlDatabase))
-class TestCompoundWithOrderLimit(ModelTestCase):
-    requires = [User]
-
-    def setUp(self):
-        super(TestCompoundWithOrderLimit, self).setUp()
-        for username in ['a', 'b', 'c', 'd', 'e', 'f']:
-            User.create(username=username)
-
-    def test_union_with_order_limit(self):
-        lhs = (User.select(User.username)
-               .where(User.username << ['a', 'b', 'c']))
-        rhs = (User.select(User.username)
-               .where(User.username << ['d', 'e', 'f']))
-
-        cq = (lhs.order_by(User.username.desc()).limit(2) |
-              rhs.order_by(User.username.desc()).limit(2))
-        results = [user.username for user in cq]
-        assert sorted(results) == ['b', 'c', 'e', 'f']
-
-        cq = cq.order_by(cq.c.username.desc()).limit(3)
-        results = [user.username for user in cq]
-        assert results == ['f', 'e', 'c']

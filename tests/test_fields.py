@@ -10,12 +10,12 @@ import uuid
 import pytest
 
 from peewee import (BlobField, DateField, DateTimeField, DecimalField,
-                    IntegrityError, Model, MySQLDatabase, Proxy,
+                    IntegrityError, Model, Proxy,
                     SqliteDatabase, TimeField, fn, prefetch)
 from peewee.core import binary_construct, sqlite3
 from tests.base import (ModelTestCase, PeeweeTestCase, TestModel,
-                        binary_construct, binary_types, database_class,
-                        skip_if, skip_test_if, skip_unless, test_db)
+                        binary_construct, binary_types,
+                        skip_test_if, skip_unless, test_db)
 from tests.models import (BlobModel, Blog, CheckModel, DBBlog, DBUser,
                           JERRelated, Job, JobExecutionRecord, MultiIndexModel,
                           NonIntModel, NonIntRelModel, NullModel,
@@ -184,10 +184,6 @@ class TestFieldTypes(ModelTestCase):
         d1 = datetime.date(2011, 1, 3)
         t1 = datetime.time(11, 12, 13, 54321)
         t2 = datetime.time(11, 12, 13)
-        if isinstance(test_db, MySQLDatabase):
-            dt1 = dt1.replace(microsecond=0)
-            dt2 = dt2.replace(microsecond=0)
-            t1 = t1.replace(microsecond=0)
 
         nm1 = NullModel.create(datetime_field=dt1, date_field=d1,
                                time_field=t1)
@@ -283,7 +279,6 @@ class TestFieldTypes(ModelTestCase):
         assert tf.python_value('11:11:11') == '11:11:11'
         assert tf.python_value('11:11 PM') == t(23, 11)
 
-    @skip_test_if(lambda: isinstance(test_db, MySQLDatabase))
     def test_blob_and_binary_field(self):
         byte_count = 256
         data = ''.join(chr(i) for i in range(256))
@@ -356,7 +351,6 @@ class TestFieldTypes(ModelTestCase):
         assertValues('efg$', 'abcdefg', 'defg')
         assertValues('a.+d', 'abcdefg', 'abcd')
 
-    @skip_test_if(lambda: database_class is MySQLDatabase)
     def test_concat(self):
         NullModel.create(char_field='foo')
         NullModel.create(char_field='bar')
@@ -784,17 +778,13 @@ class TestCheckConstraints(ModelTestCase):
 
     def test_check_constraint(self):
         CheckModel.create(value=1)
-        if isinstance(test_db, MySQLDatabase):
-            # MySQL silently ignores all check constraints.
-            CheckModel.create(value=0)
-        else:
-            with test_db.transaction() as txn:
-                with pytest.raises(IntegrityError):
-                    CheckModel.create(value=0)
-                txn.rollback()
+
+        with test_db.transaction() as txn:
+            with pytest.raises(IntegrityError):
+                CheckModel.create(value=0)
+            txn.rollback()
 
 
-@skip_if(lambda: isinstance(test_db, MySQLDatabase))
 class TestServerDefaults(ModelTestCase):
     requires = [ServerDefaultModel]
 

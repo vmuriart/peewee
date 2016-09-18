@@ -61,7 +61,6 @@ __all__ = [
     'UpperUser',
     'Package',
     'PackageItem',
-    'PGSchema',
     'UpperCharField',
     'UpperModel',
     'CommentCategory',
@@ -399,13 +398,6 @@ class PackageItem(TestModel):
         to_field=Package.barcode)
 
 
-class PGSchema(TestModel):
-    data = CharField()
-
-    class Meta:
-        schema = 'huey'
-
-
 class UpperCharField(CharField):
     def coerce(self, value):
         value = super(UpperCharField, self).coerce(value)
@@ -550,7 +542,6 @@ MODELS = [
     CheckModel,
     Package,
     PackageItem,
-    PGSchema,
     UpperModel,
     CommentCategory,
     BlogData,

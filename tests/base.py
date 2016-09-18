@@ -7,7 +7,7 @@ from contextlib import contextmanager
 from functools import wraps
 from unittest import TestCase
 
-from peewee import Model, MySQLDatabase, PostgresqlDatabase, SqliteDatabase
+from peewee import Model, SqliteDatabase
 from peewee.core import AliasMap, QueryCompiler, SelectQuery, logger
 from peewee._compat import print_
 
@@ -33,10 +33,6 @@ if TEST_VERBOSITY > 1:
     logger.addHandler(handler)
 
 
-class TestPostgresqlDatabase(PostgresqlDatabase):
-    insert_returning = False
-
-
 class DatabaseInitializer(object):
     def __init__(self, backend, database_name):
         self.backend = self.normalize(backend)
@@ -44,9 +40,7 @@ class DatabaseInitializer(object):
 
     def normalize(self, backend):
         backend = backend.lower().strip()
-        mapping = {'postgres': ('postgresql', 'pg', 'psycopg2'),
-                   'sqlite': ('sqlite3', 'pysqlite'),
-                   'berkeleydb': ('bdb', 'berkeley')}
+        mapping = {'sqlite': ('sqlite3', 'pysqlite')}
         for key, alias_list in mapping.items():
             for db_alias in alias_list:
                 if backend == db_alias:
@@ -54,9 +48,7 @@ class DatabaseInitializer(object):
         return backend
 
     def get_database_class(self, backend=None):
-        mapping = {'postgres': TestPostgresqlDatabase,
-                   'sqlite': SqliteDatabase,
-                   'mysql': MySQLDatabase}
+        mapping = {'sqlite': SqliteDatabase}
 
         backend = backend or self.backend
         try:

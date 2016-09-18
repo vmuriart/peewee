@@ -6,14 +6,12 @@ from functools import partial
 
 import pytest
 
-from peewee import (CharField, CompositeKey, DateTimeField, Field,
+from peewee import (CharField, DateTimeField, Field,
                     ForeignKeyField, IntegerField, IntegrityError, JOIN, Model,
-                    MySQLDatabase, PostgresqlDatabase, R, SQL, SqliteDatabase,
-                    TextField, fn, prefetch)
+                    R, SQL, SqliteDatabase, TextField, fn, prefetch)
 from peewee.core import ModelOptions
 from tests.base import (ModelTestCase, PeeweeTestCase, TestModel, compiler,
-                        database_initializer, normal_compiler, skip_if,
-                        skip_unless, test_db, ulit)
+                        database_initializer, normal_compiler, test_db, ulit)
 from tests.models import (Blog, BlogTwo, Category, Child, ChildNullableData,
                           ChildPet, Comment, EmptyModel, Flag, NoPKModel,
                           NonIntModel, Note, NoteFlagNullable, OrderedModel,
@@ -339,12 +337,8 @@ class TestInsertEmptyModel(ModelTestCase):
     def test_insert_empty(self):
         query = EmptyModel.insert()
         sql, params = compiler.generate_insert(query)
-        if isinstance(test_db, MySQLDatabase):
-            assert sql == (
-                'INSERT INTO "emptymodel" ("emptymodel"."id") '
-                'VALUES (DEFAULT)')
-        else:
-            assert sql == 'INSERT INTO "emptymodel" DEFAULT VALUES'
+
+        assert sql == 'INSERT INTO "emptymodel" DEFAULT VALUES'
         assert params == []
 
         # Verify the query works.
@@ -744,9 +738,7 @@ class TestModelAPIs(ModelTestCase):
             Blog._meta.only_save_dirty = False
 
     def test_zero_id(self):
-        if isinstance(test_db, MySQLDatabase):
-            # Need to explicitly tell MySQL it's OK to use zero.
-            test_db.execute_sql("SET SESSION sql_mode='NO_AUTO_VALUE_ON_ZERO'")
+
         query = 'insert into users (id, username) values ({0!s}, {1!s})'.format(
             test_db.interpolation, test_db.interpolation)
         test_db.execute_sql(query, (0, 'foo'))
@@ -1493,7 +1485,6 @@ class TestDeleteRecursive(ModelTestCase):
         ]
 
 
-@skip_if(lambda: isinstance(test_db, MySQLDatabase))
 class TestTruncate(ModelTestCase):
     requires = [User]
 
@@ -1884,265 +1875,6 @@ class TestAliasBehavior(ModelTestCase):
         sql, params = compiler.generate_select(query)
         assert sql == expected
         assert params == ['FOO']
-
-
-@skip_unless(lambda: isinstance(test_db, PostgresqlDatabase))
-class TestInsertReturningModelAPI(PeeweeTestCase):
-    def setUp(self):
-        super(TestInsertReturningModelAPI, self).setUp()
-
-        self.db = database_initializer.get_database(
-            'postgres',
-            PostgresqlDatabase)
-
-        class BaseModel(TestModel):
-            class Meta:
-                database = self.db
-
-        self.BaseModel = BaseModel
-        self.models = []
-
-    def tearDown(self):
-        if self.models:
-            self.db.drop_tables(self.models, True)
-        super(TestInsertReturningModelAPI, self).tearDown()
-
-    def test_insert_returning(self):
-        class User(self.BaseModel):
-            username = CharField()
-
-            class Meta:
-                db_table = 'users'
-
-        self.models.append(User)
-        User.create_table()
-
-        query = User.insert(username='charlie')
-        sql, params = query.sql()
-        assert sql == (
-            'INSERT INTO "users" ("username") VALUES (%s) RETURNING "id"')
-        assert params == ['charlie']
-
-        result = query.execute()
-        charlie = User.get(User.username == 'charlie')
-        assert result == charlie.id
-
-        result2 = User.insert(username='huey').execute()
-        assert result2 > result
-        huey = User.get(User.username == 'huey')
-        assert result2 == huey.id
-
-        mickey = User.create(username='mickey')
-        assert mickey.id == huey.id + 1
-        mickey.save()
-        assert User.select().count() == 3
-
-    def test_non_int_pk(self):
-        class User(self.BaseModel):
-            username = CharField(primary_key=True)
-            data = IntegerField()
-
-            class Meta:
-                db_table = 'users'
-
-        self.models.append(User)
-        User.create_table()
-
-        query = User.insert(username='charlie', data=1337)
-        sql, params = query.sql()
-        assert sql == (
-            'INSERT INTO "users" ("username", "data") '
-            'VALUES (%s, %s) RETURNING "username"')
-        assert params == ['charlie', 1337]
-
-        assert query.execute() == 'charlie'
-        charlie = User.get(User.data == 1337)
-        assert charlie.username == 'charlie'
-
-        huey = User.create(username='huey', data=1024)
-        assert huey.username == 'huey'
-        assert huey.data == 1024
-
-        huey_db = User.get(User.data == 1024)
-        assert huey_db.username == 'huey'
-        huey_db.save()
-        assert huey_db.username == 'huey'
-
-        assert User.select().count() == 2
-
-    def test_composite_key(self):
-        class Person(self.BaseModel):
-            first = CharField()
-            last = CharField()
-            data = IntegerField()
-
-            class Meta:
-                primary_key = CompositeKey('first', 'last')
-
-        self.models.append(Person)
-        Person.create_table()
-
-        query = Person.insert(first='huey', last='leifer', data=3)
-        sql, params = query.sql()
-        assert sql == (
-            'INSERT INTO "person" ("first", "last", "data") '
-            'VALUES (%s, %s, %s) RETURNING "first", "last"')
-        assert params == ['huey', 'leifer', 3]
-
-        res = query.execute()
-        assert res == ['huey', 'leifer']
-
-        huey = Person.get(Person.data == 3)
-        assert huey.first == 'huey'
-        assert huey.last == 'leifer'
-
-        zaizee = Person.create(first='zaizee', last='owen', data=2)
-        assert zaizee.first == 'zaizee'
-        assert zaizee.last == 'owen'
-
-        z_db = Person.get(Person.data == 2)
-        assert z_db.first == 'zaizee'
-        assert z_db.last == 'owen'
-        z_db.save()
-
-        assert Person.select().count() == 2
-
-    def test_insert_many(self):
-        class User(self.BaseModel):
-            username = CharField()
-
-            class Meta:
-                db_table = 'users'
-
-        self.models.append(User)
-        User.create_table()
-
-        usernames = ['charlie', 'huey', 'zaizee']
-        data = [{'username': username} for username in usernames]
-
-        query = User.insert_many(data)
-        sql, params = query.sql()
-        assert sql == (
-            'INSERT INTO "users" ("username") '
-            'VALUES (%s), (%s), (%s)')
-        assert params == usernames
-
-        res = query.execute()
-        assert res is True
-        assert User.select().count() == 3
-        z = User.select().order_by(-User.username).get()
-        assert z.username == 'zaizee'
-
-        usernames = ['foo', 'bar', 'baz']
-        data = [{'username': username} for username in usernames]
-        query = User.insert_many(data).return_id_list()
-        sql, params = query.sql()
-        assert sql == (
-            'INSERT INTO "users" ("username") '
-            'VALUES (%s), (%s), (%s) RETURNING "id"')
-        assert params == usernames
-
-        res = list(query.execute())
-        assert len(res) == 3
-        foo = User.get(User.username == 'foo')
-        bar = User.get(User.username == 'bar')
-        baz = User.get(User.username == 'baz')
-        assert res == [foo.id, bar.id, baz.id]
-
-
-@skip_unless(lambda: isinstance(test_db, PostgresqlDatabase))
-class TestReturningClause(ModelTestCase):
-    requires = [User]
-
-    def test_update_returning(self):
-        User.create_users(3)
-        u1, u2, u3 = [user for user in User.select().order_by(User.id)]
-
-        uq = User.update(username='uII').where(User.id == u2.id)
-        res = uq.execute()
-        assert res == 1  # Number of rows modified.
-
-        uq = uq.returning(User.username)
-        users = [user for user in uq.execute()]
-        assert len(users) == 1
-        user, = users
-        assert user.username == 'uII'
-        assert user.id is None  # Was not explicitly selected.
-
-        uq = (User
-              .update(username='huey')
-              .where(User.username != 'uII')
-              .returning(User))
-        users = [user for user in uq.execute()]
-        assert len(users) == 2
-        assert all(user.username == 'huey' for user in users)
-        assert all(user.id is not None for user in users)
-
-        uq = uq.dicts().returning(User.username)
-        user_data = [data for data in uq.execute()]
-        assert user_data == \
-               [{'username': 'huey'}, {'username': 'huey'}]
-
-    def test_delete_returning(self):
-        User.create_users(10)
-
-        dq = User.delete().where(User.username << ['u9', 'u10'])
-        res = dq.execute()
-        assert res == 2  # Number of rows modified.
-
-        dq = (User
-              .delete()
-              .where(User.username << ['u7', 'u8'])
-              .returning(User.username))
-        users = [user for user in dq.execute()]
-        assert len(users) == 2
-
-        usernames = sorted([user.username for user in users])
-        assert usernames == ['u7', 'u8']
-
-        ids = [user.id for user in users]
-        assert ids == [None, None]  # Was not selected.
-
-        dq = (User
-              .delete()
-              .where(User.username == 'u1')
-              .returning(User))
-        users = [user for user in dq.execute()]
-        assert len(users) == 1
-        user, = users
-        assert user.username == 'u1'
-        assert user.id is not None
-
-    def test_insert_returning(self):
-        iq = User.insert(username='zaizee').returning(User)
-        users = [user for user in iq.execute()]
-        assert len(users) == 1
-        user, = users
-        assert user.username == 'zaizee'
-        assert user.id is not None
-
-        iq = (User
-              .insert_many([
-            {'username': 'charlie'},
-            {'username': 'huey'},
-            {'username': 'connor'},
-            {'username': 'leslie'},
-            {'username': 'mickey'}])
-              .returning(User))
-        users = sorted([user for user in iq.tuples().execute()])
-
-        usernames = [username for _, username in users]
-        assert usernames == [
-            'charlie',
-            'huey',
-            'connor',
-            'leslie',
-            'mickey',
-        ]
-
-        id_charlie = users[0][0]
-        id_mickey = users[-1][0]
-        assert id_mickey - id_charlie == 4
 
 
 class TestModelHash(PeeweeTestCase):

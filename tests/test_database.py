@@ -1,16 +1,13 @@
 # -*- coding: utf-8 -*-
 
-import sys
 import threading
 
 import pytest
 
-from peewee import (CharField, IntegerField, Model, PostgresqlDatabase,
-                    SqliteDatabase)
+from peewee import CharField, IntegerField, Model, SqliteDatabase
 from tests.base import (ModelTestCase, PeeweeTestCase, TestModel, compiler,
-                        database_class, database_initializer, query_db,
-                        skip_unless, test_db, ulit)
-from tests.models import (Blog, MultiIndexModel, PGSchema, SeqModelA,
+                        database_initializer, query_db, skip_unless, test_db)
+from tests.models import (Blog, MultiIndexModel, SeqModelA,
                           SeqModelB, UniqueModel, User)
 
 try:
@@ -246,67 +243,6 @@ class TestDatabaseSequences(ModelTestCase):
         assert a2.id == b1.id - 1
         assert b1.id == b2.id - 1
         assert b2.id == a3.id - 1
-
-
-@skip_unless(lambda: issubclass(database_class, PostgresqlDatabase))
-class TestUnicodeConversion(ModelTestCase):
-    requires = [User]
-
-    def setUp(self):
-        super(TestUnicodeConversion, self).setUp()
-
-        # Create a user object with UTF-8 encoded username.
-        ustr = ulit('Ísland')
-        self.user = User.create(username=ustr)
-
-    def tearDown(self):
-        super(TestUnicodeConversion, self).tearDown()
-        test_db.register_unicode = True
-        test_db.close()
-
-    def reset_encoding(self, encoding):
-        test_db.close()
-        conn = test_db.get_conn()
-        conn.set_client_encoding(encoding)
-
-    def test_unicode_conversion(self):
-        # Per psycopg2's documentation, in Python2, strings are returned as
-        # 8-bit str objects encoded in the client encoding. In python3,
-        # the strings are automatically decoded in the connection encoding.
-
-        # Turn off unicode conversion on a per-connection basis.
-        test_db.register_unicode = False
-        self.reset_encoding('LATIN1')
-
-        u = User.get(User.id == self.user.id)
-        if sys.version_info[0] < 3:
-            assert not (u.username == self.user.username)
-        else:
-            assert u.username == self.user.username
-
-        test_db.register_unicode = True
-        self.reset_encoding('LATIN1')
-
-        u = User.get(User.id == self.user.id)
-        assert u.username == self.user.username
-
-
-@skip_unless(lambda: issubclass(database_class, PostgresqlDatabase))
-class TestPostgresqlSchema(ModelTestCase):
-    requires = [PGSchema]
-
-    def setUp(self):
-        test_db.execute_sql('CREATE SCHEMA huey;')
-        super(TestPostgresqlSchema, self).setUp()
-
-    def tearDown(self):
-        super(TestPostgresqlSchema, self).tearDown()
-        test_db.execute_sql('DROP SCHEMA huey;')
-
-    def test_pg_schema(self):
-        pgs = PGSchema.create(data='huey')
-        pgs_db = PGSchema.get(PGSchema.data == 'huey')
-        assert pgs.id == pgs_db.id
 
 
 @skip_unless(lambda: isinstance(test_db, SqliteDatabase))

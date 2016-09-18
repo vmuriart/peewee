@@ -77,9 +77,7 @@ __all__ = [
     'JOIN_INNER',
     'JOIN_LEFT_OUTER',
     'Model',
-    'MySQLDatabase',
     'Param',
-    'PostgresqlDatabase',
     'prefetch',
     'PrimaryKeyField',
     'Proxy',
@@ -98,11 +96,6 @@ __all__ = [
 # All peewee-generated logs are logged to this namespace.
 logger = logging.getLogger('peewee')
 logger.addHandler(NullHandler())
-
-# By default, peewee supports Sqlite, MySQL and Postgresql.
-psycopg2 = None
-pg_extensions = None
-mysql = None
 
 
 def format_date_time(value, formats, post_process=None):
@@ -1620,7 +1613,7 @@ class QueryCompiler(object):
         self._field_map = merge_dict(self.field_map, field_overrides or {})
         self._op_map = merge_dict(self.op_map, op_overrides or {})
         self._parse_map = self.get_parse_map()
-        self._unknown_types = set(['param'])
+        self._unknown_types = {'param'}
 
     def get_parse_map(self):
         # To avoid O(n) lookups when parsing nodes, use a lookup table for
@@ -3973,256 +3966,6 @@ class SqliteDatabase(Database):
 
     def get_binary_type(self):
         return sqlite3.Binary
-
-
-class PostgresqlDatabase(Database):
-    commit_select = True
-    compound_select_parentheses = True
-    distinct_on = True
-    drop_cascade = True
-    field_overrides = {
-        'blob': 'BYTEA',
-        'bool': 'BOOLEAN',
-        'datetime': 'TIMESTAMP',
-        'decimal': 'NUMERIC',
-        'double': 'DOUBLE PRECISION',
-        'primary_key': 'SERIAL',
-        'uuid': 'UUID',
-    }
-    for_update = True
-    for_update_nowait = True
-    insert_returning = True
-    interpolation = '%s'
-    op_overrides = {
-        OP.REGEXP: '~',
-    }
-    reserved_tables = ['user']
-    returning_clause = True
-    sequences = True
-    window_functions = True
-
-    register_unicode = True
-
-    def _connect(self, database, encoding=None, **kwargs):
-        if not psycopg2:
-            raise ImproperlyConfigured('psycopg2 must be installed.')
-        conn = psycopg2.connect(database=database, **kwargs)
-        if self.register_unicode:
-            pg_extensions.register_type(pg_extensions.UNICODE, conn)
-            pg_extensions.register_type(pg_extensions.UNICODEARRAY, conn)
-        if encoding:
-            conn.set_client_encoding(encoding)
-        return conn
-
-    def _get_pk_sequence(self, model):
-        meta = model._meta
-        if meta.primary_key is not False and meta.primary_key.sequence:
-            return meta.primary_key.sequence
-        elif meta.auto_increment:
-            return '{0!s}_{1!s}_seq'.format(meta.db_table,
-                                            meta.primary_key.db_column)
-
-    def last_insert_id(self, cursor, model):
-        sequence = self._get_pk_sequence(model)
-        if not sequence:
-            return
-
-        meta = model._meta
-        if meta.schema:
-            schema = '{0!s}.'.format(meta.schema)
-        else:
-            schema = ''
-
-        cursor.execute(
-            "SELECT CURRVAL('{0!s}\"{1!s}\"')".format(schema, sequence))
-        result = cursor.fetchone()[0]
-        if self.get_autocommit():
-            self.commit()
-        return result
-
-    def get_tables(self, schema='public'):
-        query = ('SELECT tablename FROM pg_catalog.pg_tables '
-                 'WHERE schemaname = %s ORDER BY tablename')
-        return [r for r, in self.execute_sql(query, (schema,)).fetchall()]
-
-    def get_indexes(self, table, schema='public'):
-        query = """
-            SELECT
-                i.relname, idxs.indexdef, idx.indisunique,
-                array_to_string(array_agg(cols.attname), ',')
-            FROM pg_catalog.pg_class AS t
-            INNER JOIN pg_catalog.pg_index AS idx ON t.oid = idx.indrelid
-            INNER JOIN pg_catalog.pg_class AS i ON idx.indexrelid = i.oid
-            INNER JOIN pg_catalog.pg_indexes AS idxs ON
-                (idxs.tablename = t.relname AND idxs.indexname = i.relname)
-            LEFT OUTER JOIN pg_catalog.pg_attribute AS cols ON
-                (cols.attrelid = t.oid AND cols.attnum = ANY(idx.indkey))
-            WHERE t.relname = %s AND t.relkind = %s AND idxs.schemaname = %s
-            GROUP BY i.relname, idxs.indexdef, idx.indisunique
-            ORDER BY idx.indisunique DESC, i.relname;"""
-        cursor = self.execute_sql(query, (table, 'r', schema))
-        return [IndexMetadata(row[0], row[1], row[3].split(','), row[2], table)
-                for row in cursor.fetchall()]
-
-    def get_columns(self, table, schema='public'):
-        query = """
-            SELECT column_name, is_nullable, data_type
-            FROM information_schema.columns
-            WHERE table_name = %s AND table_schema = %s
-            ORDER BY ordinal_position"""
-        cursor = self.execute_sql(query, (table, schema))
-        pks = set(self.get_primary_keys(table, schema))
-        return [ColumnMetadata(name, dt, null == 'YES', name in pks, table)
-                for name, null, dt in cursor.fetchall()]
-
-    def get_primary_keys(self, table, schema='public'):
-        query = """
-            SELECT kc.column_name
-            FROM information_schema.table_constraints AS tc
-            INNER JOIN information_schema.key_column_usage AS kc ON (
-                tc.table_name = kc.table_name AND
-                tc.table_schema = kc.table_schema AND
-                tc.constraint_name = kc.constraint_name)
-            WHERE
-                tc.constraint_type = %s AND
-                tc.table_name = %s AND
-                tc.table_schema = %s"""
-        cursor = self.execute_sql(query, ('PRIMARY KEY', table, schema))
-        return [row for row, in cursor.fetchall()]
-
-    def get_foreign_keys(self, table, schema='public'):
-        sql = """
-            SELECT
-                kcu.column_name, ccu.table_name, ccu.column_name
-            FROM information_schema.table_constraints AS tc
-            JOIN information_schema.key_column_usage AS kcu
-                ON (tc.constraint_name = kcu.constraint_name AND
-                    tc.constraint_schema = kcu.constraint_schema)
-            JOIN information_schema.constraint_column_usage AS ccu
-                ON (ccu.constraint_name = tc.constraint_name AND
-                    ccu.constraint_schema = tc.constraint_schema)
-            WHERE
-                tc.constraint_type = 'FOREIGN KEY' AND
-                tc.table_name = %s AND
-                tc.table_schema = %s"""
-        cursor = self.execute_sql(sql, (table, schema))
-        return [ForeignKeyMetadata(row[0], row[1], row[2], table)
-                for row in cursor.fetchall()]
-
-    def sequence_exists(self, sequence):
-        res = self.execute_sql("""
-            SELECT COUNT(*) FROM pg_class, pg_namespace
-            WHERE relkind='S'
-                AND pg_class.relnamespace = pg_namespace.oid
-                AND relname=%s""", (sequence,))
-        return bool(res.fetchone()[0])
-
-    def set_search_path(self, *search_path):
-        path_params = ','.join(['%s'] * len(search_path))
-        self.execute_sql('SET search_path TO {0!s}'.format(path_params),
-                         search_path)
-
-    def get_noop_sql(self):
-        return 'SELECT 0 WHERE false'
-
-    def get_binary_type(self):
-        return psycopg2.Binary
-
-
-class MySQLDatabase(Database):
-    commit_select = True
-    compound_operations = ['UNION', 'UNION ALL']
-    field_overrides = {
-        'bool': 'BOOL',
-        'decimal': 'NUMERIC',
-        'double': 'DOUBLE PRECISION',
-        'float': 'FLOAT',
-        'primary_key': 'INTEGER AUTO_INCREMENT',
-        'text': 'LONGTEXT',
-        'uuid': 'VARCHAR(40)',
-    }
-    for_update = True
-    interpolation = '%s'
-    limit_max = 2 ** 64 - 1  # MySQL quirk
-    op_overrides = {
-        OP.LIKE: 'LIKE BINARY',
-        OP.ILIKE: 'LIKE',
-        OP.XOR: 'XOR',
-    }
-    quote_char = '`'
-    subquery_delete_same_table = False
-    upsert_sql = 'REPLACE INTO'
-
-    def _connect(self, database, **kwargs):
-        if not mysql:
-            raise ImproperlyConfigured('MySQLdb or PyMySQL must be installed.')
-        conn_kwargs = {
-            'charset': 'utf8',
-            'use_unicode': True,
-        }
-        conn_kwargs.update(kwargs)
-        if 'password' in conn_kwargs:
-            conn_kwargs['passwd'] = conn_kwargs.pop('password')
-        return mysql.connect(db=database, **conn_kwargs)
-
-    def get_tables(self, schema=None):
-        return [row for row, in self.execute_sql('SHOW TABLES')]
-
-    def get_indexes(self, table, schema=None):
-        cursor = self.execute_sql('SHOW INDEX FROM `{0!s}`'.format(table))
-        unique = set()
-        indexes = {}
-        for row in cursor.fetchall():
-            if not row[1]:
-                unique.add(row[2])
-            indexes.setdefault(row[2], [])
-            indexes[row[2]].append(row[4])
-        return [IndexMetadata(name, None, indexes[name], name in unique, table)
-                for name in indexes]
-
-    def get_columns(self, table, schema=None):
-        sql = """
-            SELECT column_name, is_nullable, data_type
-            FROM information_schema.columns
-            WHERE table_name = %s AND table_schema = DATABASE()"""
-        cursor = self.execute_sql(sql, (table,))
-        pks = set(self.get_primary_keys(table))
-        return [ColumnMetadata(name, dt, null == 'YES', name in pks, table)
-                for name, null, dt in cursor.fetchall()]
-
-    def get_primary_keys(self, table, schema=None):
-        cursor = self.execute_sql('SHOW INDEX FROM `{0!s}`'.format(table))
-        return [row[4] for row in cursor.fetchall() if row[2] == 'PRIMARY']
-
-    def get_foreign_keys(self, table, schema=None):
-        query = """
-            SELECT column_name, referenced_table_name, referenced_column_name
-            FROM information_schema.key_column_usage
-            WHERE table_name = %s
-                AND table_schema = DATABASE()
-                AND referenced_table_name IS NOT NULL
-                AND referenced_column_name IS NOT NULL"""
-        cursor = self.execute_sql(query, (table,))
-        return [
-            ForeignKeyMetadata(column, dest_table, dest_column, table)
-            for column, dest_table, dest_column in cursor.fetchall()]
-
-    def extract_date(self, date_part, date_field):
-        return fn.EXTRACT(Clause(R(date_part), R('FROM'), date_field))
-
-    def truncate_date(self, date_part, date_field):
-        return fn.DATE_FORMAT(date_field, MYSQL_DATE_TRUNC_MAPPING[date_part])
-
-    def default_insert_clause(self, model_class):
-        return Clause(
-            EnclosedClause(model_class._meta.primary_key),
-            SQL('VALUES (DEFAULT)'))
-
-    def get_noop_sql(self):
-        return 'DO 0'
-
-    def get_binary_type(self):
-        return mysql.Binary
 
 
 class _callable_context_manager(object):

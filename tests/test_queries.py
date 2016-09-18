@@ -6,7 +6,7 @@ import pytest
 
 from peewee import (CharField, Clause, CompositeKey, DQ, DateField,
                     DateTimeField, FloatField, ForeignKeyField, IntegerField,
-                    JOIN, Model, MySQLDatabase, OperationalError, Param, Proxy,
+                    JOIN, Model, OperationalError, Param, Proxy,
                     R, SQL, SqliteDatabase, TextField, Window, fn)
 from peewee.core import (DeleteQuery, InsertQuery, RawQuery, SelectQuery,
                          UpdateQuery, prefetch_add_subquery, strip_parens)
@@ -1144,11 +1144,8 @@ class TestInsertQuery(PeeweeTestCase):
             ['u1'])
 
         iq = InsertQuery(User, rows=[])
-        if isinstance(test_db, MySQLDatabase):
-            assert compiler.generate_insert(iq) == (
-                'INSERT INTO "users" ("users"."id") VALUES (DEFAULT)', [])
-        else:
-            assert compiler.generate_insert(iq) == (
+
+        assert compiler.generate_insert(iq) == (
                 'INSERT INTO "users" DEFAULT VALUES', [])
 
     def test_insert_many_defaults(self):
@@ -1218,12 +1215,8 @@ class TestInsertQuery(PeeweeTestCase):
 
         iq = InsertQuery(EmptyModel, {})
         sql, params = compiler.generate_insert(iq)
-        if isinstance(test_db, MySQLDatabase):
-            assert sql == (
-                'INSERT INTO "emptymodel" ("emptymodel"."id") '
-                'VALUES (DEFAULT)')
-        else:
-            assert sql == 'INSERT INTO "emptymodel" DEFAULT VALUES'
+
+        assert sql == 'INSERT INTO "emptymodel" DEFAULT VALUES'
 
     def test_upsert(self):
         class TestUser(User):
@@ -1246,16 +1239,6 @@ class TestInsertQuery(PeeweeTestCase):
             'INSERT OR IGNORE INTO "testuser" ("username") VALUES (?)')
         assert params == ['huey']
 
-    def test_upsert_mysql(self):
-        class TestUser(User):
-            class Meta:
-                database = MySQLDatabase('peewee_test')
-
-        query = TestUser.insert(username='zaizee', id=3).upsert()
-        sql, params = query.sql()
-        assert sql == (
-            'REPLACE INTO `testuser` (`id`, `username`) VALUES (%s, %s)')
-        assert params == [3, 'zaizee']
 
     def test_returning(self):
         iq = User.insert(username='huey')

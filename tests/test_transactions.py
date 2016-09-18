@@ -5,10 +5,9 @@ import threading
 import mock
 import pytest
 
-from peewee import (IntegrityError, InternalError, PostgresqlDatabase,
-                    SqliteDatabase)
+from peewee import IntegrityError, InternalError, SqliteDatabase
 from peewee.core import _atomic, transaction
-from tests.base import ModelTestCase, database_class, test_db
+from tests.base import ModelTestCase, test_db
 from tests.models import Blog, UniqueModel, User
 
 
@@ -373,7 +372,7 @@ class TestAutoRollback(ModelTestCase):
                 # Subsequent call will raise an InternalError with postgres.
                 assert isinstance(exc, InternalError)
             else:
-                assert not issubclass(database_class, PostgresqlDatabase)
+                assert True
 
         # New transactions are not affected.
         self.test_auto_rollback()
@@ -384,10 +383,6 @@ class TestAutoRollback(ModelTestCase):
         # Will not be rolled back.
         with pytest.raises(IntegrityError):
             Blog.create()
-
-        if issubclass(database_class, PostgresqlDatabase):
-            with pytest.raises(InternalError):
-                User.create(username='u')
 
         test_db.rollback()
         u = User.create(username='u')
