@@ -41,15 +41,20 @@ class TestTopologicalSorting(PeeweeTestCase):
         FKF = ForeignKeyField
 
         # we will be topo-sorting the following models
-        class A(Model): pass
+        class A(Model):
+            pass
 
-        class B(Model): a = FKF(A)  # must follow A
+        class B(Model):
+            a = FKF(A)  # must follow A
 
-        class C(Model): a, b = FKF(A), FKF(B)  # must follow A and B
+        class C(Model):
+            a, b = FKF(A), FKF(B)  # must follow A and B
 
-        class D(Model): c = FKF(C)  # must follow A and B and C
+        class D(Model):
+            c = FKF(C)  # must follow A and B and C
 
-        class E(Model): e = FKF('self')
+        class E(Model):
+            e = FKF('self')
 
         # but excluding this model, which is a child of E
         class Excluded(Model): e = FKF(E)

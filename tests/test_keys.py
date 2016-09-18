@@ -33,8 +33,8 @@ class TestForeignKeyToNonPrimaryKey(ModelTestCase):
 
     def test_select_generation(self):
         p = Package.get(Package.barcode == '101')
-        assert [item.title for item in p.items.order_by(PackageItem.title)] == \
-               ['101-0', '101-1']
+        assert ([item.title for item in p.items.order_by(PackageItem.title)] ==
+                ['101-0', '101-1'])
 
 
 class TestMultipleForeignKey(ModelTestCase):
@@ -66,45 +66,37 @@ class TestMultipleForeignKey(ModelTestCase):
         MemoryMf = Manufacturer.alias()
         Processor = Component.alias()
         ProcessorMf = Manufacturer.alias()
-        query = (Computer
-                 .select(
-            Computer,
-            HDD,
-            Memory,
-            Processor,
-            HDDMf,
-            MemoryMf,
-            ProcessorMf)
-                 .join(HDD, on=(
-            Computer.hard_drive == HDD.id).alias('hard_drive'))
-                 .join(
-            HDDMf,
-            JOIN.LEFT_OUTER,
-            on=(HDD.manufacturer == HDDMf.id))
+        query = (Computer.select(Computer,
+                                 HDD,
+                                 Memory,
+                                 Processor,
+                                 HDDMf,
+                                 MemoryMf,
+                                 ProcessorMf)
+                 .join(HDD,
+                       on=(Computer.hard_drive == HDD.id).alias('hard_drive'))
+                 .join(HDDMf, JOIN.LEFT_OUTER,
+                       on=(HDD.manufacturer == HDDMf.id))
                  .switch(Computer)
-                 .join(Memory, on=(
-            Computer.memory == Memory.id).alias('memory'))
-                 .join(
-            MemoryMf,
-            JOIN.LEFT_OUTER,
-            on=(Memory.manufacturer == MemoryMf.id))
+                 .join(Memory,
+                       on=(Computer.memory == Memory.id).alias('memory'))
+                 .join(MemoryMf, JOIN.LEFT_OUTER,
+                       on=(Memory.manufacturer == MemoryMf.id))
                  .switch(Computer)
-                 .join(Processor, on=(
-            Computer.processor == Processor.id).alias('processor'))
-                 .join(
-            ProcessorMf,
-            JOIN.LEFT_OUTER,
-            on=(Processor.manufacturer == ProcessorMf.id))
+                 .join(Processor,
+                       on=(Computer.processor == Processor.id).alias(
+                           'processor'))
+                 .join(ProcessorMf, JOIN.LEFT_OUTER,
+                       on=(Processor.manufacturer == ProcessorMf.id))
                  .order_by(Computer.id))
 
         with self.assertQueryCount(1):
             vals = []
             manufacturers = []
             for computer in query:
-                components = [
-                    computer.hard_drive,
-                    computer.memory,
-                    computer.processor]
+                components = [computer.hard_drive,
+                              computer.memory,
+                              computer.processor]
                 vals.append([component.name for component in components])
                 for component in components:
                     if component.manufacturer:
@@ -113,10 +105,8 @@ class TestMultipleForeignKey(ModelTestCase):
                         manufacturers.append(None)
 
             assert vals == self.test_values
-            assert manufacturers == [
-                None, 'Kingston', 'Intel',
-                None, 'Kingston', 'AMD',
-            ]
+            assert manufacturers == [None, 'Kingston', 'Intel',
+                                     None, 'Kingston', 'AMD', ]
 
 
 class TestMultipleForeignKeysJoining(ModelTestCase):
@@ -138,34 +128,28 @@ class TestMultipleForeignKeysJoining(ModelTestCase):
 
         r_bc = Relationship.create(from_user=b, to_user=c)
 
-        following = User.select().join(
-            Relationship, on=Relationship.to_user
-        ).where(Relationship.from_user == a)
+        following = User.select().join(Relationship, on=Relationship.to_user
+                                       ).where(Relationship.from_user == a)
         assert list(following) == [b]
 
-        followers = User.select().join(
-            Relationship, on=Relationship.from_user
-        ).where(Relationship.to_user == a.id)
+        followers = User.select().join(Relationship, on=Relationship.from_user
+                                       ).where(Relationship.to_user == a.id)
         assert list(followers) == []
 
-        following = User.select().join(
-            Relationship, on=Relationship.to_user
-        ).where(Relationship.from_user == b.id)
+        following = User.select().join(Relationship, on=Relationship.to_user
+                                       ).where(Relationship.from_user == b.id)
         assert list(following) == [c]
 
-        followers = User.select().join(
-            Relationship, on=Relationship.from_user
-        ).where(Relationship.to_user == b.id)
+        followers = User.select().join(Relationship, on=Relationship.from_user
+                                       ).where(Relationship.to_user == b.id)
         assert list(followers) == [a]
 
-        following = User.select().join(
-            Relationship, on=Relationship.to_user
-        ).where(Relationship.from_user == c.id)
+        following = User.select().join(Relationship, on=Relationship.to_user
+                                       ).where(Relationship.from_user == c.id)
         assert list(following) == []
 
-        followers = User.select().join(
-            Relationship, on=Relationship.from_user
-        ).where(Relationship.to_user == c.id)
+        followers = User.select().join(Relationship, on=Relationship.from_user
+                                       ).where(Relationship.to_user == c.id)
         assert list(followers) == [b]
 
 
@@ -184,18 +168,16 @@ class TestCompositePrimaryKey(ModelTestCase):
 
     def test_create_table_query(self):
         query, params = compiler.create_table(TagPostThrough)
-        assert query == \
-               'CREATE TABLE "tagpostthrough" ' \
-               '("tag_id" INTEGER NOT NULL, ' \
-               '"post_id" INTEGER NOT NULL, ' \
-               'PRIMARY KEY ("tag_id", "post_id"), ' \
-               'FOREIGN KEY ("tag_id") REFERENCES "tag" ("id"), ' \
-               'FOREIGN KEY ("post_id") REFERENCES "post" ("id")' \
-               ')'
+        assert (query == 'CREATE TABLE "tagpostthrough" '
+                         '("tag_id" INTEGER NOT NULL, '
+                         '"post_id" INTEGER NOT NULL, '
+                         'PRIMARY KEY ("tag_id", "post_id"), '
+                         'FOREIGN KEY ("tag_id") REFERENCES "tag" ("id"), '
+                         'FOREIGN KEY ("post_id") REFERENCES "post" ("id")'
+                         ')')
 
     def test_get_set_id(self):
-        tpt = (TagPostThrough
-               .select()
+        tpt = (TagPostThrough.select()
                .join(Tag)
                .switch(TagPostThrough)
                .join(Post)
@@ -229,13 +211,12 @@ class TestCompositePrimaryKey(ModelTestCase):
 
     def test_composite_key_model(self):
         CKM = CompositeKeyModel
-        values = [
-            ('a', 1, 1.0),
-            ('a', 2, 2.0),
-            ('b', 1, 1.0),
-            ('b', 2, 2.0)]
-        c1, c2, c3, c4 = [
-            CKM.create(f1=f1, f2=f2, f3=f3) for f1, f2, f3 in values]
+        values = [('a', 1, 1.0),
+                  ('a', 2, 2.0),
+                  ('b', 1, 1.0),
+                  ('b', 2, 2.0)]
+        c1, c2, c3, c4 = [CKM.create(f1=f1, f2=f2, f3=f3) for f1, f2, f3 in
+                          values]
 
         # Update a single row, giving it a new value for `f3`.
         CKM.update(f3=3.0).where((CKM.f1 == 'a') & (CKM.f2 == 2)).execute()
@@ -258,28 +239,24 @@ class TestCompositePrimaryKey(ModelTestCase):
         # PK is lost (and hence cannot be used to update).
         c4.f1 = 'c'
         c4.save()
-        with pytest.raises(
-            CKM.DoesNotExist):
+        with pytest.raises(CKM.DoesNotExist):
             CKM.get((CKM.f1 == 'c') & (CKM.f2 == 2))
 
     def test_count_composite_key(self):
         CKM = CompositeKeyModel
-        values = [
-            ('a', 1, 1.0),
-            ('a', 2, 2.0),
-            ('b', 1, 1.0),
-            ('b', 2, 1.0)]
+        values = [('a', 1, 1.0),
+                  ('a', 2, 2.0),
+                  ('b', 1, 1.0),
+                  ('b', 2, 1.0)]
         for f1, f2, f3 in values:
             CKM.create(f1=f1, f2=f2, f3=f3)
 
         assert CKM.select().wrapped_count() == 4
         assert CKM.select().count() == 4
-        assert CKM.select().where(
-            (CKM.f1 == 'a') &
-            (CKM.f2 == 1)).exists()
-        assert not CKM.select().where(
-            (CKM.f1 == 'a') &
-            (CKM.f2 == 3)).exists()
+        assert CKM.select().where((CKM.f1 == 'a') &
+                                  (CKM.f2 == 1)).exists()
+        assert not CKM.select().where((CKM.f1 == 'a') &
+                                      (CKM.f2 == 3)).exists()
 
     def test_delete_instance(self):
         u1, u2 = [User.create(username='u{0!s}'.format(i)) for i in range(2)]
@@ -290,20 +267,18 @@ class TestCompositePrimaryKey(ModelTestCase):
 
         res = ut1.delete_instance()
         assert res == 1
-        assert [x.thing for x in
-                UserThing.select().order_by(UserThing.thing)] == \
-               ['t1', 't2', 't3']
+        assert [x.thing for x in UserThing.select()
+            .order_by(UserThing.thing)] == ['t1', 't2', 't3']
 
 
 class TestForeignKeyNonPrimaryKeyCreateTable(PeeweeTestCase):
     def test_create_table(self):
         class A(TestModel):
             cf = CharField(max_length=100, unique=True)
-            df = DecimalField(
-                max_digits=4,
-                decimal_places=2,
-                auto_round=True,
-                unique=True)
+            df = DecimalField(max_digits=4,
+                              decimal_places=2,
+                              auto_round=True,
+                              unique=True)
 
         class CF(TestModel):
             a = ForeignKeyField(A, to_field='cf')
@@ -312,18 +287,16 @@ class TestForeignKeyNonPrimaryKeyCreateTable(PeeweeTestCase):
             a = ForeignKeyField(A, to_field='df')
 
         cf_create, _ = compiler.create_table(CF)
-        assert cf_create == \
-               'CREATE TABLE "cf" (' \
-               '"id" INTEGER NOT NULL PRIMARY KEY, ' \
-               '"a_id" VARCHAR(100) NOT NULL, ' \
-               'FOREIGN KEY ("a_id") REFERENCES "a" ("cf"))'
+        assert (cf_create == 'CREATE TABLE "cf" ('
+                             '"id" INTEGER NOT NULL PRIMARY KEY, '
+                             '"a_id" VARCHAR(100) NOT NULL, '
+                             'FOREIGN KEY ("a_id") REFERENCES "a" ("cf"))')
 
         df_create, _ = compiler.create_table(DF)
-        assert df_create == \
-               'CREATE TABLE "df" (' \
-               '"id" INTEGER NOT NULL PRIMARY KEY, ' \
-               '"a_id" DECIMAL(4, 2) NOT NULL, ' \
-               'FOREIGN KEY ("a_id") REFERENCES "a" ("df"))'
+        assert (df_create == 'CREATE TABLE "df" ('
+                             '"id" INTEGER NOT NULL PRIMARY KEY, '
+                             '"a_id" DECIMAL(4, 2) NOT NULL, '
+                             'FOREIGN KEY ("a_id") REFERENCES "a" ("df"))')
 
 
 class TestDeferredForeignKey(ModelTestCase):
@@ -350,9 +323,8 @@ class TestDeferredForeignKey(ModelTestCase):
         orig = len(DeferredRelation._unresolved)
 
         class CircularRef1(Model):
-            circ_ref2 = ForeignKeyField(
-                DeferredRelation('circularref2'),
-                null=True)
+            circ_ref2 = ForeignKeyField(DeferredRelation('circularref2'),
+                                        null=True)
 
         assert len(DeferredRelation._unresolved) == orig + 1
 
@@ -365,20 +337,18 @@ class TestDeferredForeignKey(ModelTestCase):
 
     def test_create_table_query(self):
         query, params = compiler.create_table(Snippet)
-        assert query == \
-               'CREATE TABLE "snippet" ' \
-               '("id" INTEGER NOT NULL PRIMARY KEY, ' \
-               '"code" TEXT NOT NULL, ' \
-               '"language_id" INTEGER NOT NULL, ' \
-               'FOREIGN KEY ("language_id") REFERENCES "language" ("id")' \
-               ')'
+        assert (query == 'CREATE TABLE "snippet" '
+                         '("id" INTEGER NOT NULL PRIMARY KEY, '
+                         '"code" TEXT NOT NULL, '
+                         '"language_id" INTEGER NOT NULL, '
+                         'FOREIGN KEY ("language_id") '
+                         'REFERENCES "language" ("id"))')
 
         query, params = compiler.create_table(Language)
-        assert query == \
-               'CREATE TABLE "language" ' \
-               '("id" INTEGER NOT NULL PRIMARY KEY, ' \
-               '"name" VARCHAR(255) NOT NULL, ' \
-               '"selected_snippet_id" INTEGER)'
+        assert (query == 'CREATE TABLE "language" '
+                         '("id" INTEGER NOT NULL PRIMARY KEY, '
+                         '"name" VARCHAR(255) NOT NULL, '
+                         '"selected_snippet_id" INTEGER)')
 
     def test_storage_retrieval(self):
         python = Language.create(name='python')
@@ -395,7 +365,7 @@ class TestDeferredForeignKey(ModelTestCase):
 
         assert Language.get(Language.id == python.id).selected_snippet == p2
         assert Language.get(
-            Language.id == javascript.id).selected_snippet == None
+            Language.id == javascript.id).selected_snippet is None
 
 
 class TestSQLiteDeferredForeignKey(PeeweeTestCase):

@@ -31,9 +31,7 @@ class GCModel(Model):
 
     class Meta:
         database = in_memory_db
-        indexes = (
-            (('key', 'value'), True),
-        )
+        indexes = ((('key', 'value'), True),)
 
 
 def incrementer():
@@ -70,8 +68,7 @@ class TestQueryingModels(ModelTestCase):
             u = User.create(username='u{0:d}'.format(i))
             for j in range(nb):
                 b = Blog.create(title='b-{0:d}-{1:d}'.format(i, j),
-                                content=str(j),
-                                user=u)
+                                content=str(j), user=u)
 
     def test_select(self):
         self.create_users_blogs()
@@ -94,10 +91,8 @@ class TestQueryingModels(ModelTestCase):
         all_cols = SQL('*')
         query = Blog.select(all_cols)
         blogs = [blog for blog in query.order_by(Blog.pk)]
-        assert [b.title for b in blogs] == \
-               ['b-0-0', 'b-0-1', 'b-1-0', 'b-1-1']
-        assert [b.user.username for b in blogs] == \
-               ['u0', 'u0', 'u1', 'u1']
+        assert [b.title for b in blogs] == ['b-0-0', 'b-0-1', 'b-1-0', 'b-1-1']
+        assert [b.user.username for b in blogs] == ['u0', 'u0', 'u1', 'u1']
 
     def test_select_subquery(self):
         # 10 users, 5 blogs each
@@ -108,22 +103,19 @@ class TestQueryingModels(ModelTestCase):
 
         subquery = Blog.select(fn.Count(Blog.pk)).where(
             Blog.user == User.id).group_by(Blog.user)
-        users = User.select(User, subquery.alias('ct')).order_by(R('ct'),
-                                                                 User.id)
+        users = User.select(User, subquery.alias('ct')).order_by(
+            R('ct'), User.id)
 
-        assert [(x.username, x.ct) for x in users] == [
-            ('u2', 2),
-            ('u0', 3),
-            ('u1', 3),
-            ('u3', 3),
-            ('u4', 3),
-        ]
+        assert [(x.username, x.ct) for x in users] == [('u2', 2),
+                                                       ('u0', 3),
+                                                       ('u1', 3),
+                                                       ('u3', 3),
+                                                       ('u4', 3), ]
 
     def test_select_with_bind_to(self):
         self.create_users_blogs(1, 1)
         blog = Blog.select(
-            Blog,
-            User,
+            Blog, User,
             (User.username == 'u0').alias('is_u0').bind_to(User),
             (User.username == 'u1').alias('is_u1').bind_to(User)
         ).join(User).get()
@@ -169,12 +161,12 @@ class TestQueryingModels(ModelTestCase):
         User.create_users(5)
         uq = User.update(username='u-edited').where(
             User.username << ['u1', 'u2', 'u3'])
-        assert [u.username for u in User.select().order_by(User.id)] == \
-               ['u1', 'u2', 'u3', 'u4', 'u5']
+        assert ([u.username for u in User.select().order_by(User.id)] ==
+                ['u1', 'u2', 'u3', 'u4', 'u5'])
 
         uq.execute()
-        assert [u.username for u in User.select().order_by(User.id)] == \
-               ['u-edited', 'u-edited', 'u-edited', 'u4', 'u5']
+        assert ([u.username for u in User.select().order_by(User.id)] ==
+                ['u-edited', 'u-edited', 'u-edited', 'u4', 'u5'])
 
         with pytest.raises(KeyError):
             User.update(doesnotexist='invalid')
@@ -190,10 +182,9 @@ class TestQueryingModels(ModelTestCase):
         subquery = Blog.select(fn.COUNT(Blog.pk)).where(Blog.user == User.id)
         query = User.update(username=subquery)
         sql, params = normal_compiler.generate_update(query)
-        assert sql == (
-            'UPDATE "users" SET "username" = ('
-            'SELECT COUNT("t2"."pk") FROM "blog" AS t2 '
-            'WHERE ("t2"."user_id" = "users"."id"))')
+        assert sql == ('UPDATE "users" SET "username" = ('
+                       'SELECT COUNT("t2"."pk") FROM "blog" AS t2 '
+                       'WHERE ("t2"."user_id" = "users"."id"))')
         assert query.execute() == 3
 
         usernames = [u.username for u in User.select().order_by(User.id)]
@@ -215,15 +206,13 @@ class TestQueryingModels(ModelTestCase):
         u0, u1, u2 = [User.create(username='U{0!s}'.format(i)) for i in
                       range(3)]
 
-        subquery = (User
-                    .select(fn.LOWER(User.username))
+        subquery = (User.select(fn.LOWER(User.username))
                     .where(User.username << ['U0', 'U2']))
         iq = User.insert_from([User.username], subquery)
         sql, params = normal_compiler.generate_insert(iq)
-        assert sql == (
-            'INSERT INTO "users" ("username") '
-            'SELECT LOWER("t2"."username") FROM "users" AS t2 '
-            'WHERE ("t2"."username" IN (?, ?))')
+        assert sql == ('INSERT INTO "users" ("username") '
+                       'SELECT LOWER("t2"."username") FROM "users" AS t2 '
+                       'WHERE ("t2"."username" IN (?, ?))')
         assert params == ['U0', 'U2']
 
         iq.execute()
@@ -232,11 +221,10 @@ class TestQueryingModels(ModelTestCase):
 
     def test_insert_many(self):
         qc = len(self.queries())
-        iq = User.insert_many([
-            {'username': 'u1'},
-            {'username': 'u2'},
-            {'username': 'u3'},
-            {'username': 'u4'}])
+        iq = User.insert_many([{'username': 'u1'},
+                               {'username': 'u2'},
+                               {'username': 'u3'},
+                               {'username': 'u4'}])
         assert iq.execute()
 
         qc2 = len(self.queries())
@@ -253,25 +241,23 @@ class TestQueryingModels(ModelTestCase):
         assert iq.execute()
         assert User.select().count() == 5
 
-        iq = User.insert_many([
-            {User.username: 'u6'},
-            {User.username: 'u7'},
-            {'username': 'u8'}]).execute()
+        iq = User.insert_many([{User.username: 'u6'},
+                               {User.username: 'u7'},
+                               {'username': 'u8'}]).execute()
 
         sq = User.select(User.username).order_by(User.username)
-        assert [u.username for u in sq] == \
-               ['u1', 'u2', 'u3', 'u4', 'u5', 'u6', 'u7', 'u8']
+        assert ([u.username for u in sq] ==
+                ['u1', 'u2', 'u3', 'u4', 'u5', 'u6', 'u7', 'u8'])
 
     def test_insert_many_fallback(self):
         # Simulate database not supporting multiple insert (older versions of
         # sqlite).
         test_db.insert_many = False
         with self.assertQueryCount(4):
-            iq = User.insert_many([
-                {'username': 'u1'},
-                {'username': 'u2'},
-                {'username': 'u3'},
-                {'username': 'u4'}])
+            iq = User.insert_many([{'username': 'u1'},
+                                   {'username': 'u2'},
+                                   {'username': 'u3'},
+                                   {'username': 'u4'}])
             assert iq.execute()
 
         assert User.select().count() == 4

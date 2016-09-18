@@ -217,10 +217,8 @@ class MultiIndexModel(TestModel):
     f3 = CharField()
 
     class Meta:
-        indexes = (
-            (('f1', 'f2'), True),
-            (('f2', 'f3'), False),
-        )
+        indexes = ((('f1', 'f2'), True),
+                   (('f2', 'f3'), False))
 
 
 class BlogTwo(Blog):

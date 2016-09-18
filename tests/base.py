@@ -43,11 +43,9 @@ class DatabaseInitializer(object):
 
     def normalize(self, backend):
         backend = backend.lower().strip()
-        mapping = {
-            'postgres': ('postgresql', 'pg', 'psycopg2'),
-            'sqlite': ('sqlite3', 'pysqlite'),
-            'berkeleydb': ('bdb', 'berkeley'),
-        }
+        mapping = {'postgres': ('postgresql', 'pg', 'psycopg2'),
+                   'sqlite': ('sqlite3', 'pysqlite'),
+                   'berkeleydb': ('bdb', 'berkeley')}
         for key, alias_list in mapping.items():
             for db_alias in alias_list:
                 if backend == db_alias:
@@ -55,11 +53,9 @@ class DatabaseInitializer(object):
         return backend
 
     def get_database_class(self, backend=None):
-        mapping = {
-            'postgres': TestPostgresqlDatabase,
-            'sqlite': SqliteDatabase,
-            'mysql': MySQLDatabase,
-        }
+        mapping = {'postgres': TestPostgresqlDatabase,
+                   'sqlite': SqliteDatabase,
+                   'mysql': MySQLDatabase}
 
         backend = backend or self.backend
         try:
@@ -95,10 +91,8 @@ class DatabaseInitializer(object):
 
     def get_sqlcipher_database(self, db_class, **kwargs):
         passphrase = kwargs.pop('passphrase', 'snakeoilpassphrase')
-        return db_class(
-            self.get_filename('.cipher.db'),
-            passphrase=passphrase,
-            **kwargs)
+        return db_class(self.get_filename('.cipher.db'),
+                        passphrase=passphrase, **kwargs)
 
     def get_sqlite_database(self, db_class, **kwargs):
         return db_class(self.get_filename('.db'), **kwargs)
@@ -132,7 +126,7 @@ class TestDatabase(SqliteDatabase):
         try:
             return super(TestDatabase, self).execute_sql(
                 sql, params, require_commit)
-        except Exception as exc:
+        except Exception:
             self.last_error = (sql, params)
             raise
 
@@ -313,4 +307,4 @@ class QueryLogger(object):
         all_queries = self.test_case.queries()
         self._final_query_count = len(all_queries)
         self.queries = all_queries[
-                       self._initial_query_count:self._final_query_count]
+                       self._initial_query_count: self._final_query_count]

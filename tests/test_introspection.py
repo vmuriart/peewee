@@ -7,9 +7,8 @@ from tests.models import (Blog, Category, Comment, CompositeKeyModel,
 
 
 class TestMetadataIntrospection(ModelTestCase):
-    requires = [
-        User, Blog, Comment, CompositeKeyModel, MultiIndexModel, UniqueModel,
-        Category]
+    requires = [User, Blog, Comment, CompositeKeyModel, MultiIndexModel,
+                UniqueModel, Category]
 
     def setUp(self):
         super(TestMetadataIntrospection, self).setUp()
@@ -32,9 +31,8 @@ class TestMetadataIntrospection(ModelTestCase):
         assert idx.columns == ['name']
         assert idx.unique
 
-        indexes = dict(
-            (idx.name, idx) for idx in
-            test_db.get_indexes(MultiIndexModel._meta.db_table))
+        indexes = dict((idx.name, idx) for idx in
+                       test_db.get_indexes(MultiIndexModel._meta.db_table))
         num_indexes = self.pk_index and 3 or 2
         assert len(indexes) == num_indexes
 
@@ -55,9 +53,8 @@ class TestMetadataIntrospection(ModelTestCase):
 
     def test_get_columns(self):
         def get_columns(model):
-            return dict(
-                (column.name, column)
-                for column in test_db.get_columns(model._meta.db_table))
+            return dict((column.name, column) for column in
+                        test_db.get_columns(model._meta.db_table))
 
         def assertColumns(model, col_names, nullable, pks):
             columns = get_columns(model)
@@ -68,28 +65,18 @@ class TestMetadataIntrospection(ModelTestCase):
                 assert metadata.primary_key == (column in pks)
 
         assertColumns(User, ['id', 'username'], [], ['id'])
-        assertColumns(
-            Blog,
-            ['content', 'pk', 'pub_date', 'title', 'user_id'],
-            ['pub_date'],
-            ['pk'])
+        assertColumns(Blog, ['content', 'pk', 'pub_date', 'title', 'user_id'],
+                      ['pub_date'], ['pk'])
         assertColumns(UniqueModel, ['id', 'name'], [], ['id'])
         assertColumns(MultiIndexModel, ['f1', 'f2', 'f3', 'id'], [], ['id'])
-        assertColumns(
-            CompositeKeyModel,
-            ['f1', 'f2', 'f3'],
-            [],
-            ['f1', 'f2'])
-        assertColumns(
-            Category,
-            ['id', 'name', 'parent_id'],
-            ['parent_id'],
-            ['id'])
+        assertColumns(CompositeKeyModel, ['f1', 'f2', 'f3'], [], ['f1', 'f2'])
+        assertColumns(Category, ['id', 'name', 'parent_id'], ['parent_id'],
+                      ['id'])
 
     def test_get_primary_keys(self):
         def assertPKs(model_class, expected):
-            assert test_db.get_primary_keys(model_class._meta.db_table) == \
-                   expected
+            assert (test_db.get_primary_keys(model_class._meta.db_table) ==
+                    expected)
 
         assertPKs(User, ['id'])
         assertPKs(Blog, ['pk'])
@@ -103,8 +90,7 @@ class TestMetadataIntrospection(ModelTestCase):
             foreign_keys = test_db.get_foreign_keys(model_class._meta.db_table)
             assert len(foreign_keys) == len(expected)
             assert [(fk.column, fk.dest_table, fk.dest_column)
-                    for fk in foreign_keys] == \
-                   expected
+                    for fk in foreign_keys] == expected
 
         assertFKs(Category, [('parent_id', 'category', 'id')])
         assertFKs(User, [])

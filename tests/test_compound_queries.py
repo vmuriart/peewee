@@ -191,22 +191,20 @@ class TestCompoundSelectSQL(PeeweeTestCase):
                  Beta.select(Beta.beta))
         query = Alpha.select().where(Alpha.alpha << union)
         sql, params = query.sql()
-        assert sql == (
-            'SELECT "t1"."id", "t1"."alpha" '
-            'FROM "alpha" AS t1 WHERE ("t1"."alpha" IN ('
-            'SELECT "t1"."alpha" FROM "alpha" AS t1 '
-            'UNION '
-            'SELECT "t2"."beta" FROM "beta" AS t2))')
+        assert sql == ('SELECT "t1"."id", "t1"."alpha" '
+                       'FROM "alpha" AS t1 WHERE ("t1"."alpha" IN ('
+                       'SELECT "t1"."alpha" FROM "alpha" AS t1 '
+                       'UNION '
+                       'SELECT "t2"."beta" FROM "beta" AS t2))')
 
 
 class TestCompoundSelectQueries(ModelTestCase):
     requires = [User, UniqueModel, OrderedModel, Blog]
     # User -> username, UniqueModel -> name, OrderedModel -> title
-    test_values = {
-        User.username: ['a', 'b', 'c', 'd'],
-        OrderedModel.title: ['a', 'c', 'e'],
-        UniqueModel.name: ['b', 'd', 'e'],
-    }
+    test_values = {User.username: ['a', 'b', 'c', 'd'],
+                   OrderedModel.title: ['a', 'c', 'e'],
+                   UniqueModel.name: ['b', 'd', 'e'],
+                   }
 
     def setUp(self):
         super(TestCompoundSelectQueries, self).setUp()
@@ -221,24 +219,21 @@ class TestCompoundSelectQueries(ModelTestCase):
                 if op in test_db.compound_operations:
                     return fn(self)
                 else:
-                    log_console(
-                        '"{0!s}" not supported, skipping {1!s}'.format(op,
-                                                                       fn.__name__))
+                    log_console('"{0!s}" not supported, skipping {1!s}'
+                                .format(op, fn.__name__))
 
             return inner
 
         return decorator
 
     def assertValues(self, query, expected):
-        assert sorted(query.tuples()) == \
-               [(x,) for x in sorted(expected)]
+        assert sorted(query.tuples()) == [(x,) for x in sorted(expected)]
 
     def assertPermutations(self, op, expected):
-        fields = {
-            User: User.username,
-            UniqueModel: UniqueModel.name,
-            OrderedModel: OrderedModel.title,
-        }
+        fields = {User: User.username,
+                  UniqueModel: UniqueModel.name,
+                  OrderedModel: OrderedModel.title,
+                  }
         for key in itertools.permutations(fields.keys(), 2):
             if key in expected:
                 left, right = key
@@ -271,23 +266,19 @@ class TestCompoundSelectQueries(ModelTestCase):
 
     @requires_op('UNION')
     def test_union_from(self):
-        uq = (User
-              .select(User.username.alias('name'))
+        uq = (User.select(User.username.alias('name'))
               .where(User.username << ['a', 'b', 'd']))
 
-        oq = (OrderedModel
-              .select(OrderedModel.title.alias('name'))
+        oq = (OrderedModel.select(OrderedModel.title.alias('name'))
               .where(OrderedModel.title << ['a', 'b'])
               .order_by())
 
-        iq = (UniqueModel
-              .select(UniqueModel.name.alias('name'))
+        iq = (UniqueModel.select(UniqueModel.name.alias('name'))
               .where(UniqueModel.name << ['c', 'd']))
 
         union_q = (uq | oq | iq).alias('union_q')
 
-        query = (User
-                 .select(union_q.c.name)
+        query = (User.select(union_q.c.name)
                  .from_(union_q)
                  .order_by(union_q.c.name.desc()))
         assert [row[0] for row in query.tuples()] == ['d', 'b', 'a']
@@ -343,8 +334,7 @@ class TestCompoundSelectQueries(ModelTestCase):
         union = (User.select(User.username) |
                  UniqueModel.select(UniqueModel.name))
         query = union.order_by(SQL('username').desc()).limit(3)
-        assert [user.username for user in query] == \
-               ['e', 'd', 'c']
+        assert [user.username for user in query] == ['e', 'd', 'c']
 
     @requires_op('UNION')
     @requires_op('INTERSECT')
@@ -357,11 +347,10 @@ class TestCompoundSelectQueries(ModelTestCase):
         assert list(query.dicts()) == [{'username': 'b'}]
 
         query = (left | right).order_by(SQL('1'))
-        assert list(query.dicts()) == [
-            {'username': 'a'},
-            {'username': 'b'},
-            {'username': 'd'},
-            {'username': 'e'}]
+        assert list(query.dicts()) == [{'username': 'a'},
+                                       {'username': 'b'},
+                                       {'username': 'd'},
+                                       {'username': 'e'}]
 
     @requires_op('UNION')
     def test_union_subquery(self):
@@ -371,10 +360,9 @@ class TestCompoundSelectQueries(ModelTestCase):
                  .select(User.username)
                  .where(User.username << union)
                  .order_by(User.username.desc()))
-        assert list(query.dicts()) == [
-            {'username': 'd'},
-            {'username': 'b'},
-            {'username': 'a'}]
+        assert list(query.dicts()) == [{'username': 'd'},
+                                       {'username': 'b'},
+                                       {'username': 'a'}]
 
     @requires_op('UNION')
     def test_result_wrapper(self):
@@ -385,27 +373,23 @@ class TestCompoundSelectQueries(ModelTestCase):
                             user=user)
 
         with self.assertQueryCount(1):
-            q1 = (Blog
-                  .select(Blog, User)
+            q1 = (Blog.select(Blog, User)
                   .join(User)
                   .where(Blog.title.contains('foo')))
-            q2 = (Blog
-                  .select(Blog, User)
+            q2 = (Blog.select(Blog, User)
                   .join(User)
                   .where(Blog.title.contains('baz')))
             cq = (q1 | q2).order_by(SQL('username, title'))
             results = [(b.user.username, b.title) for b in cq]
 
-        assert results == [
-            ('a', 'a-baz'),
-            ('a', 'a-foo'),
-            ('b', 'b-baz'),
-            ('b', 'b-foo'),
-            ('c', 'c-baz'),
-            ('c', 'c-foo'),
-            ('d', 'd-baz'),
-            ('d', 'd-foo'),
-        ]
+        assert results == [('a', 'a-baz'),
+                           ('a', 'a-foo'),
+                           ('b', 'b-baz'),
+                           ('b', 'b-foo'),
+                           ('c', 'c-baz'),
+                           ('c', 'c-foo'),
+                           ('d', 'd-baz'),
+                           ('d', 'd-foo')]
 
     @requires_op('UNION')
     def test_union_with_count(self):
@@ -425,11 +409,9 @@ class TestCompoundWithOrderLimit(ModelTestCase):
             User.create(username=username)
 
     def test_union_with_order_limit(self):
-        lhs = (User
-               .select(User.username)
+        lhs = (User.select(User.username)
                .where(User.username << ['a', 'b', 'c']))
-        rhs = (User
-               .select(User.username)
+        rhs = (User.select(User.username)
                .where(User.username << ['d', 'e', 'f']))
 
         cq = (lhs.order_by(User.username.desc()).limit(2) |

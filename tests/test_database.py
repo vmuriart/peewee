@@ -28,7 +28,7 @@ class TestMultiThreadedQueries(ModelTestCase):
         kwargs = {}
         try:  # Some engines need the extra kwargs.
             kwargs.update(test_db.connect_kwargs)
-        except:
+        except Exception:
             pass
         if isinstance(test_db, SqliteDatabase):
             # Put a very large timeout in place to avoid `database is locked`
@@ -178,10 +178,9 @@ class TestDroppingIndex(ModelTestCase):
 
             class Meta:
                 database = db
-                indexes = (
-                    (('f1', 'f2'), True),
-                    (('idx', 'uniq'), False),
-                )
+                indexes = ((('f1', 'f2'), True),
+                           (('idx', 'uniq'), False),
+                           )
 
         IndexedModel.create_table()
         indexes = db.get_indexes(IndexedModel._meta.db_table)
@@ -195,12 +194,8 @@ class TestDroppingIndex(ModelTestCase):
         with self.log_queries() as query_log:
             IndexedModel._drop_indexes()
 
-        assert sorted(query_log.queries) == sorted([
-                                                       (
-                                                           'DROP INDEX "{0!s}"'.format(
-                                                               idx.name),
-                                                           []) for idx in
-                                                       indexes])
+        assert sorted(query_log.queries) == sorted(
+            [('DROP INDEX "{0!s}"'.format(idx.name), []) for idx in indexes])
         assert db.get_indexes(IndexedModel._meta.db_table) == []
 
 

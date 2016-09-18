@@ -28,7 +28,7 @@ class TestNodeAPI(PeeweeTestCase):
         n = Node()
         c = n.hack('magic!')
         assert not n._negated
-        assert n._alias == None
+        assert n._alias is None
         assert c._negated
         assert c._alias == 'magic!'
 
@@ -37,7 +37,7 @@ class TestNodeAPI(PeeweeTestCase):
 
         hacked = TestModel.data.hack('nugget')
         assert not TestModel.data._negated
-        assert TestModel.data._alias == None
+        assert TestModel.data._alias is None
         assert hacked._negated
         assert hacked._alias == 'nugget'
 
