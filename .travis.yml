@@ -1,19 +1,31 @@
 language: python
-python:
-    - 2.7
-    - 3.5
+python: 3.5
 
 env:
-    - PEEWEE_TEST_BACKEND=sqlite
+    - TOXENV=flake8
+    - TOXENV=py27
+    - TOXENV=py34
+    - TOXENV=py35
+
+matrix:
+    fast_finish: true
+
+    include:
+        - python: "nightly"
+          env: TOXENV=py36
+
+    allow_failures:
+        - env: TOXENV=flake8
+        - python: "nightly"
 
 install:
-    - pip install tox mock codecov
-
-before_script:
-    - sh -c "python setup.py install"
+    - pip install tox codecov
 
 script:
-    - python runtests.py -e sqlite
+    - tox
+
+after_success:
+    - codecov
 
 notifications:
     email: false
