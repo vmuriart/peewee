@@ -8,7 +8,8 @@ from functools import wraps
 from unittest import TestCase
 
 from peewee import Model, MySQLDatabase, PostgresqlDatabase, SqliteDatabase
-from peewee.core import AliasMap, QueryCompiler, SelectQuery, logger, print_
+from peewee.core import AliasMap, QueryCompiler, SelectQuery, logger
+from peewee._compat import print_
 
 # Python 2/3 compatibility.
 if sys.version_info[0] < 3:
