@@ -7,24 +7,21 @@ import sys
 import time
 import uuid
 
-from peewee import MySQLDatabase
-from peewee import Param
-from peewee import Proxy
-from peewee import SqliteDatabase
-from peewee import binary_construct
-from peewee import sqlite3
-from tests.base import binary_construct
-from tests.base import binary_types
-from tests.base import database_class
-from tests.base import ModelTestCase
-from tests.base import PeeweeTestCase
-from tests.base import skip_test_if
-from tests.base import skip_test_unless
-from tests.base import skip_if
-from tests.base import skip_unless
-from tests.base import test_db
-from tests.models import *
 import pytest
+
+from peewee import (BlobField, DateField, DateTimeField, DecimalField,
+                    IntegrityError, Model, MySQLDatabase, Proxy,
+                    SqliteDatabase, TimeField, binary_construct, fn, prefetch,
+                    sqlite3)
+from tests.base import (ModelTestCase, PeeweeTestCase, TestModel,
+                        binary_construct, binary_types, database_class,
+                        skip_if, skip_test_if, skip_unless, test_db)
+from tests.models import (BlobModel, Blog, CheckModel, DBBlog, DBUser,
+                          JERRelated, Job, JobExecutionRecord, MultiIndexModel,
+                          NonIntModel, NonIntRelModel, NullModel,
+                          ServerDefaultModel, TestingID, TimestampModel,
+                          UIntModel, UIntRelModel, UUIDData, UUIDRelatedModel,
+                          UniqueModel, User)
 
 
 class TestFieldTypes(ModelTestCase):

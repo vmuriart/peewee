@@ -1,22 +1,21 @@
 # -*- coding: utf-8 -*-
 
-from peewee import DeleteQuery
-from peewee import InsertQuery
-from peewee import prefetch_add_subquery
-from peewee import RawQuery
-from peewee import strip_parens
-from peewee import SelectQuery
-from peewee import UpdateQuery
-from tests.base import compiler
-from tests.base import ModelTestCase
-from tests.base import normal_compiler
-from tests.base import PeeweeTestCase
-from tests.base import skip_if
-from tests.base import test_db
-from tests.base import TestDatabase
-from tests.base import TestModel
-from tests.models import *
+import datetime
+
 import pytest
+
+from peewee import (CharField, Clause, CompositeKey, DQ, DateField,
+                    DateTimeField, DeleteQuery, FloatField, ForeignKeyField,
+                    InsertQuery, IntegerField, JOIN, Model, MySQLDatabase,
+                    OperationalError, Param, Proxy, R, RawQuery, SQL,
+                    SelectQuery, SqliteDatabase, TextField, UpdateQuery,
+                    Window, fn, prefetch_add_subquery, strip_parens)
+from tests.base import (ModelTestCase, PeeweeTestCase, TestDatabase, TestModel,
+                        compiler, normal_compiler, skip_if, test_db)
+from tests.models import (Blog, CSVRow, Category, Child, ChildPet, Comment,
+                          NullModel, OrderedModel, Orphan, OrphanPet, Package,
+                          PackageItem, Parent, Relationship, TestModelA,
+                          TestModelB, TestModelC, User)
 
 
 class TestSelectQuery(PeeweeTestCase):

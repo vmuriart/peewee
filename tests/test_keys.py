@@ -1,17 +1,16 @@
 # -*- coding: utf-8 -*-
 
-from peewee import DeferredRelation
-from peewee import Model
-from peewee import SqliteDatabase
-from tests.base import compiler
-from tests.base import database_initializer
-from tests.base import ModelTestCase
-from tests.base import PeeweeTestCase
-from tests.base import skip_if
-from tests.base import skip_test_if
-from tests.base import test_db
-from tests.models import *
 import pytest
+
+from peewee import (CharField, DecimalField, DeferredRelation, ForeignKeyField,
+                    IntegrityError, JOIN, Model, OperationalError,
+                    SqliteDatabase, TextField, fn)
+from tests.base import (ModelTestCase, PeeweeTestCase, TestModel, compiler,
+                        database_initializer, skip_test_if, test_db)
+from tests.models import (Blog, Component, CompositeKeyModel, Computer,
+                          Language, Manufacturer, Package, PackageItem, Post,
+                          Relationship, Snippet, Tag, TagPostThrough, User,
+                          UserThing)
 
 
 class TestForeignKeyToNonPrimaryKey(ModelTestCase):

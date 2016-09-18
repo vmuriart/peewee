@@ -7,20 +7,8 @@ from contextlib import contextmanager
 from functools import wraps
 from unittest import TestCase
 
-from peewee import *
-from peewee import AliasMap
-from peewee import logger
-from peewee import print_
-from peewee import QueryCompiler
-from peewee import SelectQuery
-
-# Register psycopg2 compatibility hooks.
-try:
-    from pyscopg2cffi import compat
-
-    compat.register()
-except ImportError:
-    pass
+from peewee import (AliasMap, Model, MySQLDatabase, PostgresqlDatabase,
+                    QueryCompiler, SelectQuery, SqliteDatabase, logger, print_)
 
 # Python 2/3 compatibility.
 if sys.version_info[0] < 3:

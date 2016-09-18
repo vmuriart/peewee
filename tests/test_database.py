@@ -3,24 +3,20 @@
 import sys
 import threading
 
+import pytest
+
+from peewee import (CharField, IntegerField, Model, PostgresqlDatabase,
+                    SqliteDatabase)
+from tests.base import (ModelTestCase, PeeweeTestCase, TestModel, compiler,
+                        database_class, database_initializer, query_db,
+                        skip_unless, test_db, ulit)
+from tests.models import (Blog, MultiIndexModel, PGSchema, SeqModelA,
+                          SeqModelB, UniqueModel, User)
+
 try:
     from Queue import Queue
 except ImportError:
     from queue import Queue
-
-from peewee import OperationalError
-from peewee import SqliteDatabase
-from tests.base import compiler
-from tests.base import database_class
-from tests.base import database_initializer
-from tests.base import ModelTestCase
-from tests.base import PeeweeTestCase
-from tests.base import query_db
-from tests.base import skip_unless
-from tests.base import test_db
-from tests.base import ulit
-from tests.models import *
-import pytest
 
 
 class TestMultiThreadedQueries(ModelTestCase):

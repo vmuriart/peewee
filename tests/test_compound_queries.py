@@ -2,21 +2,12 @@
 
 import itertools
 import operator
-import sys
-
-if sys.version_info[0] != 3:
-    from functools import reduce
 from functools import wraps
 
-from peewee import *
-from tests.base import compiler
-from tests.base import database_initializer
-from tests.base import log_console
-from tests.base import ModelTestCase
-from tests.base import PeeweeTestCase
-from tests.base import skip_unless
-from tests.base import test_db
-from tests.models import *
+from peewee import IntegerField, Model, PostgresqlDatabase, SQL
+from tests.base import (ModelTestCase, PeeweeTestCase, database_initializer,
+                        log_console, skip_unless, test_db)
+from tests.models import Blog, OrderedModel, UniqueModel, User
 
 compound_db = database_initializer.get_in_memory_database()
 

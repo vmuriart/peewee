@@ -3,13 +3,17 @@
 import itertools
 import sys
 
-from peewee import ModelQueryResultWrapper
-from peewee import NaiveQueryResultWrapper
-from tests.base import ModelTestCase
-from tests.base import skip_test_if
-from tests.base import test_db
-from tests.models import *
 import pytest
+
+from peewee import (JOIN, JOIN_LEFT_OUTER, ModelQueryResultWrapper,
+                    NaiveQueryResultWrapper, SQL, fn, prefetch)
+from tests.base import ModelTestCase, test_db
+from tests.models import (Blog, BlogData, Category, Child, ChildPet, Comment,
+                          CommentCategory, Flag, Note, NoteFlag, Orphan,
+                          OrphanPet, Package, PackageItem, Parent, Post,
+                          Relationship, SpecialComment, Tag, TagPostThrough,
+                          TagPostThroughAlt, TestModelA, TestModelB,
+                          TestModelC, UpperUser, User, UserCategory)
 
 
 class TestQueryResultWrapper(ModelTestCase):

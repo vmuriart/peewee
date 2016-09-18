@@ -1,10 +1,9 @@
 # -*- coding: utf-8 -*-
 
-from peewee import *
-from peewee import sort_models_topologically
-from tests.base import PeeweeTestCase
-from tests.base import test_db
 import pytest
+
+from peewee import ForeignKeyField, Model, sort_models_topologically
+from tests.base import PeeweeTestCase, test_db
 
 
 class TestHelperMethods(PeeweeTestCase):

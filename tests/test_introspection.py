@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 
-from tests.base import database_class
-from tests.base import ModelTestCase
-from tests.base import test_db
-from tests.models import *
+from peewee import SqliteDatabase
+from tests.base import ModelTestCase, database_class, test_db
+from tests.models import (Blog, Category, Comment, CompositeKeyModel,
+                          MultiIndexModel, UniqueModel, User)
 
 
 class TestMetadataIntrospection(ModelTestCase):

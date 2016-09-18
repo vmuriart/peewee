@@ -1,17 +1,14 @@
 # -*- coding: utf-8 -*-
 
 import threading
-import mock
 
-from peewee import _atomic
-from peewee import SqliteDatabase
-from peewee import transaction
-from tests.base import database_class
-from tests.base import ModelTestCase
-from tests.base import skip_if
-from tests.base import test_db
-from tests.models import *
+import mock
 import pytest
+
+from peewee import (IntegrityError, InternalError, PostgresqlDatabase,
+                    SqliteDatabase, _atomic, transaction)
+from tests.base import ModelTestCase, database_class, test_db
+from tests.models import Blog, UniqueModel, User
 
 
 class TestTransaction(ModelTestCase):

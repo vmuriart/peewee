@@ -31,18 +31,16 @@ import threading
 import time
 import uuid
 import weakref
-from bisect import bisect_left
-from bisect import bisect_right
-from collections import deque
-from collections import namedtuple
+from bisect import bisect_left, bisect_right
+from collections import deque, namedtuple
+from copy import deepcopy
+from functools import wraps
+from inspect import isclass
 
 try:
     from collections import OrderedDict
 except ImportError:
     OrderedDict = dict
-from copy import deepcopy
-from functools import wraps
-from inspect import isclass
 
 __version__ = '2.8.3'
 __all__ = [

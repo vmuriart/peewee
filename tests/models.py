@@ -3,9 +3,12 @@
 import datetime
 import sys
 
-from peewee import *
+from peewee import (BigIntegerField, BlobField, BooleanField, CharField, Check,
+                    CompositeKey, DateField, DateTimeField, DecimalField,
+                    DeferredRelation, DoubleField, Field, FixedCharField,
+                    FloatField, ForeignKeyField, IntegerField, PrimaryKeyField,
+                    SQL, TextField, TimeField, TimestampField, UUIDField)
 from tests.base import TestModel
-from tests.base import test_db
 
 if sys.version_info[0] == 3:
     long = int

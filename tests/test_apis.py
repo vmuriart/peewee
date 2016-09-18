@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 
-from peewee import Node
-from peewee import *
-from tests.base import PeeweeTestCase
 import pytest
+
+from peewee import CharField, Model, Node
+from tests.base import PeeweeTestCase
 
 
 class TestNodeAPI(PeeweeTestCase):

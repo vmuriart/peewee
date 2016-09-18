@@ -1,21 +1,23 @@
 # -*- coding: utf-8 -*-
 
+import datetime
 import sys
 from functools import partial
 
-from peewee import *
-from peewee import ModelOptions
-from tests.base import compiler
-from tests.base import database_initializer
-from tests.base import ModelTestCase
-from tests.base import normal_compiler
-from tests.base import PeeweeTestCase
-from tests.base import skip_if
-from tests.base import skip_unless
-from tests.base import test_db
-from tests.base import ulit
-from tests.models import *
 import pytest
+
+from peewee import (CharField, CompositeKey, DateTimeField, Field,
+                    ForeignKeyField, IntegerField, IntegrityError, JOIN, Model,
+                    ModelOptions, MySQLDatabase, PostgresqlDatabase, R, SQL,
+                    SqliteDatabase, TextField, fn, prefetch)
+from tests.base import (ModelTestCase, PeeweeTestCase, TestModel, compiler,
+                        database_initializer, normal_compiler, skip_if,
+                        skip_unless, test_db, ulit)
+from tests.models import (Blog, BlogTwo, Category, Child, ChildNullableData,
+                          ChildPet, Comment, EmptyModel, Flag, NoPKModel,
+                          NonIntModel, Note, NoteFlagNullable, OrderedModel,
+                          Orphan, OrphanPet, Package, PackageItem, Parent,
+                          UniqueMultiField, UpperModel, User, UserCategory)
 
 in_memory_db = database_initializer.get_in_memory_database()
 

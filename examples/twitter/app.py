@@ -4,14 +4,11 @@ import datetime
 from functools import wraps
 from hashlib import md5
 
-from flask import Flask
-from flask import g
-from flask import redirect
-from flask import request
-from flask import session
-from flask import url_for, abort, render_template, flash
+from flask import (Flask, abort, flash, g, redirect, render_template, request,
+                   session, url_for)
 
-from peewee import *
+from peewee import (CharField, DateTimeField, ForeignKeyField, IntegrityError,
+                    Model, SqliteDatabase, TextField)
 
 # config - aside from our database, the rest is for use by Flask
 DATABASE = 'tweepee.db'
